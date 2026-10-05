@@ -257,7 +257,7 @@ const DEF_SET={
   web:'Laman: www.bhpmedan.kemenkum.go.id, Pos-el: bhp.medan@kemenkum.go.id',
   kepala:'Syafriadi Lubis',wa:'0851-2156-2136',
   kanwilTembusan:'Kepala Kantor Wilayah Kementerian Hukum Sumatera Utara',
-  pejabat:[{nama:'SYUHADA',nip:'196706121989031001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'MARIANI BR MARBUN',nip:'197604222003122001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'TUMIAR SIMANJORANG',nip:'197306111993032001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'DARTIMNOV MT HARAHAP',nip:'',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'NANANG SURYA PURNAMA',nip:'198106282000031001',jabatan:'Kurator Keperdataan Ahli Muda'}],
+  pejabat:[{nama:'SYUHADA',nip:'196706121989031001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'DARTIMNOV M.T HARAHAP',nip:'197311272002121001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'MARIANI BR MARBUN',nip:'197604222003122001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'TUMIAR SIMANJORANG',nip:'197306111993032001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'NANANG SURYA PURNAMA',nip:'198106282000031001',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'TITIN WAHYUNASARI DONGORAN',nip:'198001172010012010',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'SITI ROSLINA',nip:'196801141987032001',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'JOKO PRABOWO',nip:'199101242019011001',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'DIAN STEVANY TONGLI',nip:'199209232019012001',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'BUDIYANTO',nip:'197312212001121001',jabatan:'Kepala Seksi Harta Peninggalan Wilayah I'},{nama:'ELSINTHA DAMAYANTI',nip:'197105051992032001',jabatan:'Kepala Seksi Harta Peninggalan Wilayah II'},{nama:'LUSIANA TARIHORAN',nip:'197304101998032001',jabatan:'Kepala Seksi Harta Peninggalan Wilayah III'}],
   lafaz:{
     Islam:'WALLAHI (Demi Allah) saya bersumpah, bahwa saya akan melakukan dengan sejujur-jujurnya dan dengan tulus ikhlas {JENIS} terhadap {STATUS} saya yang telah diperintahkan dan dipercayakan {PENGADILAN} kepada saya.',
     Kristen:'Demi Tuhan saya berjanji, bahwa saya akan melakukan dengan sejujur-jujurnya dan dengan tulus ikhlas {JENIS} terhadap {STATUS} saya yang telah diperintahkan dan dipercayakan {PENGADILAN} kepada saya. Semoga Tuhan menolong saya.',
@@ -317,7 +317,7 @@ const V=v=>v?esc(v):'<span style="background:#fde68a">……</span>';
 /* pejabat penanda tangan BA Sumpah / BA Inventarisasi / BAP: Kurator Keperdataan minimal Ahli Muda (Muda, Madya, Utama) atau Kepala Seksi Harta Peninggalan */
 const pjJab=p=>String(p&&p.jabatan||'').toLowerCase().replace(/\s+/g,' ');
 const pjKurator=p=>/kurator/.test(pjJab(p))&&/ahli\s*(muda|madya|utama)/.test(pjJab(p));
-const pjKasi=p=>/(kepala\s*seksi|kasi\b|kasubag|kepala\s*sub).*(harta\s*peninggalan|hp\b)|harta\s*peninggalan.*kepala\s*seksi/.test(pjJab(p))&&!/pelaksana|staf|staff/.test(pjJab(p));
+const pjKasi=p=>/(kepala\s*seksi|kasi\b).*(harta\s*peninggalan|\bhp\b|wilayah)|harta\s*peninggalan.*kepala\s*seksi/.test(pjJab(p))&&!/pelaksana|staf|staff/.test(pjJab(p));
 const pjLayak=p=>!!p&&!!p.nama&&(pjKurator(p)||pjKasi(p));
 function pjOptLayak(v){const P=SET.pejabat||[],c=pjCari(v).nama,ur=(a,b)=>String(a.nama).localeCompare(b.nama);
   const k=P.filter(pjKurator).sort(ur),h=P.filter(p=>pjKasi(p)&&!pjKurator(p)).sort(ur),lain=P.filter(p=>!pjLayak(p)&&p.nama===c);
@@ -326,7 +326,10 @@ function pjOptLayak(v){const P=SET.pejabat||[],c=pjCari(v).nama,ur=(a,b)=>String
     +(lain.length?`<optgroup label="⚠ Tidak memenuhi syarat jabatan">${lain.map(o).join('')}</optgroup>`:'')
     +((k.length+h.length+lain.length)?'':P.map(o).join(''))}
 const pjPeringatan=v=>{const x=pjCari(v);return x.nama&&!pjLayak(x)&&(SET.pejabat||[]).some(pjLayak)?`<small class="fmsg">Jabatan "${esc(x.jabatan||'-')}" tidak memenuhi syarat (Kurator Keperdataan min. Ahli Muda / Kepala Seksi Harta Peninggalan)</small>`:''};
-function pjCari(v){const P=SET.pejabat||[];if(typeof v==='number')return P[v]||{};return P.find(p=>p.nama===v)||{nama:v||'',nip:'',jabatan:''}}
+/* pejabat tersimpan (mis. daftar lama 5 orang) dilengkapi dengan daftar pegawai bawaan: yang belum ada ditambah, NIP/jabatan kosong diisi */
+function lengkapiPejabat(){const nz=x=>String(x||'').toUpperCase().replace(/[^A-Z]/g,''),P=SET.pejabat=Array.isArray(SET.pejabat)?SET.pejabat:[];
+  DEF_SET.pejabat.forEach(d=>{const x=P.find(p=>nz(p.nama)===nz(d.nama));if(!x)P.push({...d});else{if(!x.nip)x.nip=d.nip;if(!x.jabatan||(!pjLayak(x)&&pjLayak(d)))x.jabatan=d.jabatan}})}
+function pjCari(v){const P=SET.pejabat||[];if(typeof v==='number')return P[v]||{};const nz=x=>String(x||'').toUpperCase().replace(/[^A-Z]/g,'');return P.find(p=>p.nama===v)||P.find(p=>v&&nz(p.nama)===nz(v))||{nama:v||'',nip:'',jabatan:''}}
 function derive(r){
   const w=r.jenis==='Perwalian', J=w?'Wali':'Pengampu';
   const sapa=r.jk==='Laki-laki'?'Bapak':'Ibu';
@@ -594,7 +597,7 @@ async function doLogin(f){const b=f.querySelector('button');b.disabled=true;b.te
   catch(e){showLogin(e.message||String(e))}}
 async function boot(){
   if(!TOKEN){showLogin();return}
-  try{const r=INIT||await api('apiInit');INIT=null;ME=r.user;USERS=r.users||[];SPS=r.sps||SPS;SET=Object.assign(JSON.parse(JSON.stringify(DEF_SET)),r.settings||{});DB=r.berkas||[];FOLDER=r.folderUrl||'';
+  try{const r=INIT||await api('apiInit');INIT=null;ME=r.user;USERS=r.users||[];SPS=r.sps||SPS;SET=Object.assign(JSON.parse(JSON.stringify(DEF_SET)),r.settings||{});lengkapiPejabat();DB=r.berkas||[];FOLDER=r.folderUrl||'';
     DB.sort((a,b)=>String(b._meta?.diubahPada||'').localeCompare(String(a._meta?.diubahPada||'')));
     if(r.ai!==undefined)ADA_AI=r.ai;else api('apiAdaAI').then(v=>ADA_AI=v).catch(()=>{});
   }catch(e){if(!TOKEN)return;showLogin(e.message);return}

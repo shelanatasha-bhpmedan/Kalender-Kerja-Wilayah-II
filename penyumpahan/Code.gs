@@ -814,6 +814,8 @@ function apiSinkronPegawai(token, ssId) {
     const unit = cu >= 0 ? String(r[cu] || '').trim() : '';
     /* "Kepala Seksi" + unit "Harta Peninggalan" → "Kepala Seksi Harta Peninggalan" agar dikenali sebagai pejabat BA */
     if (unit && /^(kepala|kasi)/i.test(jab) && !/harta/i.test(jab) && /harta/i.test(unit)) jab = (/seksi/i.test(jab) ? jab : 'Kepala Seksi') + ' ' + unit.replace(/^seksi\s*/i, '');
+    /* "Kepala Seksi HP Wilayah II" / "Kepala Seksi Wilayah I" → "Kepala Seksi Harta Peninggalan Wilayah …"; huruf kapital awal kata */
+    jab = jab.replace(/\bHP\b/i, 'Harta Peninggalan').replace(/^(kepala seksi)\s+(wilayah)/i, '$1 Harta Peninggalan $2').toLowerCase().replace(/\b([a-z])/g, function (m) { return m.toUpperCase(); }).replace(/\b(Iii|Ii|Iv)\b/g, function (m) { return m.toUpperCase(); }).replace(/\bBhp\b/, 'BHP');
     out.push({ nama: nama.toUpperCase().replace(/,\s*S\..*$/, '').trim(), namaLengkap: nama, nip: nip, jabatan: jab });
   });
   const set = settings_();
