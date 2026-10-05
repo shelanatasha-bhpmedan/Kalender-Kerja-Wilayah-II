@@ -795,12 +795,13 @@ function apiSinkronPegawai(token, ssId) {
   const sh = ss.getSheetByName('Data Lengkap Pegawai') || ss.getSheetByName('Daftar Pegawai');
   if (!sh) throw new Error('Sheet "Data Lengkap Pegawai" / "Daftar Pegawai" tidak ditemukan.');
   const v = sh.getDataRange().getDisplayValues();
-  let h = -1, cn = -1, ci = -1, cj = -1;
+  let h = -1, cn = -1, ci = -1, cj = -1, cu = -1;
   for (let i = 0; i < Math.min(5, v.length) && h < 0; i++) {
     const row = v[i].map(function (x) { return String(x).toLowerCase(); });
     cn = row.findIndex(function (x) { return /nama/.test(x) && !/jabatan|pangkat|unit/.test(x); });
     ci = row.findIndex(function (x) { return /^nip\b|\bnip\b/.test(x); });
     cj = row.findIndex(function (x) { return /jabatan/.test(x); });
+    cu = row.findIndex(function (x, k) { return k !== cj && /seksi|sub ?bagian|unit|bidang|bagian/.test(x) && !/nama|nip/.test(x); });
     if (cn >= 0 && ci >= 0) h = i;
   }
   if (h < 0) throw new Error('Kolom Nama & NIP tidak dikenali pada sheet ' + sh.getName() + '.');
@@ -809,7 +810,11 @@ function apiSinkronPegawai(token, ssId) {
     const nama = String(r[cn] || '').trim(), nip = String(r[ci] || '').replace(/\s/g, '');
     if (!nama || seen[nama.toUpperCase()]) return;
     seen[nama.toUpperCase()] = 1;
-    out.push({ nama: nama.toUpperCase().replace(/,\s*S\..*$/, '').trim(), namaLengkap: nama, nip: nip, jabatan: cj >= 0 ? String(r[cj] || '').trim() : '' });
+    let jab = cj >= 0 ? String(r[cj] || '').trim() : '';
+    const unit = cu >= 0 ? String(r[cu] || '').trim() : '';
+    /* "Kepala Seksi" + unit "Harta Peninggalan" → "Kepala Seksi Harta Peninggalan" agar dikenali sebagai pejabat BA */
+    if (unit && /^(kepala|kasi)/i.test(jab) && !/harta/i.test(jab) && /harta/i.test(unit)) jab = (/seksi/i.test(jab) ? jab : 'Kepala Seksi') + ' ' + unit.replace(/^seksi\s*/i, '');
+    out.push({ nama: nama.toUpperCase().replace(/,\s*S\..*$/, '').trim(), namaLengkap: nama, nip: nip, jabatan: jab });
   });
   const set = settings_();
   set.pejabat = out;

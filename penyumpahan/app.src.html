@@ -314,6 +314,18 @@ const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const V=v=>v?esc(v):'<span style="background:#fde68a">……</span>';
 
 /* ---------------- turunan ---------------- */
+/* pejabat penanda tangan BA Sumpah / BA Inventarisasi / BAP: Kurator Keperdataan minimal Ahli Muda (Muda, Madya, Utama) atau Kepala Seksi Harta Peninggalan */
+const pjJab=p=>String(p&&p.jabatan||'').toLowerCase().replace(/\s+/g,' ');
+const pjKurator=p=>/kurator/.test(pjJab(p))&&/ahli\s*(muda|madya|utama)/.test(pjJab(p));
+const pjKasi=p=>/(kepala\s*seksi|kasi\b|kasubag|kepala\s*sub).*(harta\s*peninggalan|hp\b)|harta\s*peninggalan.*kepala\s*seksi/.test(pjJab(p))&&!/pelaksana|staf|staff/.test(pjJab(p));
+const pjLayak=p=>!!p&&!!p.nama&&(pjKurator(p)||pjKasi(p));
+function pjOptLayak(v){const P=SET.pejabat||[],c=pjCari(v).nama,ur=(a,b)=>String(a.nama).localeCompare(b.nama);
+  const k=P.filter(pjKurator).sort(ur),h=P.filter(p=>pjKasi(p)&&!pjKurator(p)).sort(ur),lain=P.filter(p=>!pjLayak(p)&&p.nama===c);
+  const o=p=>`<option ${p.nama===c?'selected':''} value="${esc(p.nama)}">${esc(p.nama||'(isi di Pengaturan)')} — ${esc(p.jabatan||'')}${p.nip?'':' (NIP kosong)'}</option>`;
+  return (k.length?`<optgroup label="Kurator Keperdataan (Ahli Muda ke atas)">${k.map(o).join('')}</optgroup>`:'')+(h.length?`<optgroup label="Kepala Seksi Harta Peninggalan">${h.map(o).join('')}</optgroup>`:'')
+    +(lain.length?`<optgroup label="⚠ Tidak memenuhi syarat jabatan">${lain.map(o).join('')}</optgroup>`:'')
+    +((k.length+h.length+lain.length)?'':P.map(o).join(''))}
+const pjPeringatan=v=>{const x=pjCari(v);return x.nama&&!pjLayak(x)&&(SET.pejabat||[]).some(pjLayak)?`<small class="fmsg">Jabatan "${esc(x.jabatan||'-')}" tidak memenuhi syarat (Kurator Keperdataan min. Ahli Muda / Kepala Seksi Harta Peninggalan)</small>`:''};
 function pjCari(v){const P=SET.pejabat||[];if(typeof v==='number')return P[v]||{};return P.find(p=>p.nama===v)||{nama:v||'',nip:'',jabatan:''}}
 function derive(r){
   const w=r.jenis==='Perwalian', J=w?'Wali':'Pengampu';
@@ -725,6 +737,7 @@ function cekCetak(r){const L=[],E=(tab,f,msg)=>L.push({lvl:'e',tab,f,msg}),W=(ta
     const n=jumlahSumpah(r.tglSumpah,r.id);if(n>=(SET.kuotaHarian||8))W('jadwal','tglSumpah',`Sudah ada ${n} penyumpahan lain di tanggal ini`)}
   if(!r.waktu)W('jadwal','waktu','Waktu sumpah kosong');
   if(!r.madya)E('jadwal','madya','Pejabat penyumpah belum dipilih');
+  [['madya','Pejabat BA Sumpah'],['muda','Pejabat BA Inventarisasi'],['bapOleh','Pejabat BAP']].forEach(([k,l])=>{const v=k==='bapOleh'?(r.bapOleh??r.muda):r[k],x=pjCari(v);if(x.nama&&!pjLayak(x)&&(SET.pejabat||[]).some(pjLayak))W('jadwal',k,l+' '+x.nama+' bukan Kurator Keperdataan min. Ahli Muda / Kepala Seksi Harta Peninggalan')});
   // 5. BAP & harta
   if(!String(r.isiBap||'').trim())W('harta','isiBap','Isi BAP masih kosong (akan memakai susunan otomatis)');
   if(!r.saksi1||!r.saksi2)W('harta','saksi1','Nama saksi penyumpahan belum lengkap');
@@ -894,9 +907,9 @@ function renderMain(){
     `<div><label>Usia (otomatis)</label><input disabled value="${usia(cur.terampu.tglLahir,cur.tglSumpah)}"></div>`+F('terampu.kondisi','Kondisi medis + surat dokter','area')}
   if(tab==='jadwal')h+=`<div class="full" style="max-width:460px"><label>Pilih tanggal sumpah — angka kuning = jumlah penyumpahan yang sudah terjadwal di hari itu</label><div id="miniCal" class="cal mini">${kalHtml(KAL.ymMini||(cur.tglSumpah||today()).slice(0,7),true)}</div></div>`+F('tglSumpah','Tanggal Sumpah','date')+F('waktu','Waktu')+F('tempat','Tempat (kosong = kediaman)')+F('zoom','Link Zoom (isi bila sumpah virtual)')+
     `<div><label>Hari/tanggal di BA (otomatis)</label><input disabled value="${tglBA(cur.tglSumpah)}"></div>
-    <div><label>Pejabat penyumpah (Madya)</label><select onchange="setv('madya',this.value)">${pjOpt(cur.madya)}</select></div>
-    <div><label>Pejabat inventarisasi harta (Muda)</label><select onchange="setv('muda',this.value)">${pjOpt(cur.muda)}</select></div>
-    <div><label>Pejabat BAP</label><select onchange="setv('bapOleh',this.value)">${pjOpt(cur.bapOleh??cur.muda)}</select></div>`+F('kanwilTembusan',`Tembusan Kanwil (kosong = ${SET.kanwilTembusan})`)+
+    <div><label>Pejabat BA Sumpah <span class="hint">(Kurator min. Ahli Muda / Kepala Seksi Harta Peninggalan)</span></label><select onchange="setv('madya',this.value);renderMain()">${pjOptLayak(cur.madya)}</select>${pjPeringatan(cur.madya)}</div>
+    <div><label>Pejabat BA Inventarisasi Harta</label><select onchange="setv('muda',this.value);renderMain()">${pjOptLayak(cur.muda)}</select>${pjPeringatan(cur.muda)}</div>
+    <div><label>Pejabat BAP</label><select onchange="setv('bapOleh',this.value);renderMain()">${pjOptLayak(cur.bapOleh??cur.muda)}</select>${pjPeringatan(cur.bapOleh??cur.muda)}</div>`+F('kanwilTembusan',`Tembusan Kanwil (kosong = ${SET.kanwilTembusan})`)+
     F('saksi1','Saksi 1 (opsional)')+F('saksi2','Saksi 2 (opsional)')+`<div class="full"><label>Lafaz sumpah (otomatis sesuai agama)</label><textarea disabled>${esc(d.laf)}</textarea></div>`;
   if(tab==='harta')h+=`<div class="full"><h4 style="margin:4px 0">Harta kekayaan ${w?'anak':'terampu'} (untuk BA Inventarisasi & BAP)</h4></div>`+
     HARTA.map(([k,l,o])=>{if(cur[k]===undefined&&o)cur[k]=cur[o]||'';return F(k,'Aktiva — '+l+' (satu per baris)','area')}).join('')+F('hartaHutang','Passiva — Hutang-hutang (satu per baris)','area')+
@@ -1432,8 +1445,8 @@ function wizard(step){WZ.on=true;$('.wrap').classList.add('wzmode');WZ.step=step
   if(step===3){const pjOpt=v=>{const c=pjCari(v).nama;return SET.pejabat.map(p=>`<option ${p.nama===c?'selected':''} value="${esc(p.nama)}">${esc(p.nama)} — ${esc(p.jabatan||'')}</option>`).join('')};
     m.innerHTML=`<div class="wz">${wzHead(3)}<h4>📅 Bagian 3: Jadwal Sumpah & Pejabat</h4><div class="grid">
     ${F('tglSumpah','Tanggal Sumpah','date')}${F('waktu','Waktu')}${F('tempat','Tempat (kosong = kediaman)')}${F('hp','No. HP pemohon')}
-    <div><label>Pejabat penyumpah (Madya)</label><select onchange="setv('madya',this.value)">${pjOpt(cur.madya)}</select></div>
-    <div><label>Pejabat BAP & inventarisasi (Muda)</label><select onchange="setv('muda',this.value);setv('bapOleh',this.value)">${pjOpt(cur.muda)}</select></div></div>
+    <div><label>Pejabat BA Sumpah</label><select onchange="setv('madya',this.value)">${pjOptLayak(cur.madya)}</select></div>
+    <div><label>Pejabat BA Inventarisasi Harta & BAP</label><select onchange="setv('muda',this.value);setv('bapOleh',this.value)">${pjOptLayak(cur.muda)}</select></div></div>
     <div class="wz-f"><button onclick="WZ.on=false;tab='umum';setNav('berkas','Daftar Berkas');renderMain()">Lengkapi detail lain</button><span style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="WZ.on=false;tab='dok';setNav('berkas','Daftar Berkas');renderMain();toast('Berkas tersimpan')">Simpan & Lihat Dokumen</button><button class="pri" onclick="WZ.on=false;tab='dok';setNav('berkas','Daftar Berkas');renderMain();prosesOtomatis()">⚡ Proses Otomatis →</button></span></div></div>`}
 }
 
