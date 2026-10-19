@@ -97,6 +97,15 @@ function db_() {
   return ss;
 }
 function sheet_(n) { return db_().getSheetByName(n); }
+/** Ambil satu baris Berkas berdasarkan id tanpa membaca seluruh sheet (TextFinder di kolom id) — jauh lebih cepat saat berkas banyak. */
+function berkasRow_(id) {
+  const sh = sheet_('Berkas'), h = COLS.Berkas;
+  const c = sh.getRange(2, 1, Math.max(1, sh.getLastRow() - 1), 1).createTextFinder(String(id)).matchEntireCell(true).findNext();
+  if (!c) return null;
+  const v = sh.getRange(c.getRow(), 1, 1, h.length).getValues()[0], o = { _row: c.getRow() };
+  h.forEach(function (k, j) { o[k] = v[j]; });
+  return o.id === id ? o : null;
+}
 function rows_(n) {
   const v = sheet_(n).getDataRange().getValues();
   const h = v.shift();
@@ -643,11 +652,14 @@ function sinkronAkses_() {
  */
 function apiBuatDokumen(token, id, key, judul, b64) {
   const u = user_(token);
-  const r = rows_('Berkas').filter(function (x) { return x.id === id; })[0];
+  const r = berkasRow_(id);
   if (!r) throw new Error('Simpan berkas dulu.');
   if (r.dihapus === true) throw new Error('Berkas sudah dihapus.');
   const d = JSON.parse(r.data);
-  const folder = folderBerkas_(d);
+  /* folder berkas diingat (folderId) supaya tidak mencari berlapis-lapis tiap kali membuat dokumen */
+  let folder = null;
+  if (d.folderId) { try { folder = DriveApp.getFolderById(d.folderId); if (folder.isTrashed()) folder = null; } catch (e) { folder = null; } }
+  if (!folder) folder = folderBerkas_(d);
   const nama = (judul + ' - ' + (d.nama || '')).replace(/[\/\\]/g, '_');
   d.dokumen = d.dokumen || {};
   const lama = d.dokumen[key];
@@ -679,13 +691,14 @@ function apiBuatDokumen(token, id, key, judul, b64) {
   for (let i = 0; i < 3 && !dikunci; i++) { try { lock.waitLock(15000); dikunci = true; } catch (e) { Utilities.sleep(800); } }
   if (!dikunci) throw new Error('Server sedang sibuk menyimpan berkas lain. Dokumen sudah dibuat di Drive (' + d.dokumen[key].url + '); coba klik lagi dalam beberapa detik.');
   try {
-    const now2 = rows_('Berkas').filter(function (x) { return x.id === id; })[0];
+    const now2 = berkasRow_(id);
     const d2 = JSON.parse(now2.data);
-    d2.dokumen = d.dokumen; d2.folderUrl = d.folderUrl;
+    /* hanya dokumen ini yang ditulis — aman bila beberapa dokumen dibuat bersamaan */
+    d2.dokumen = d2.dokumen || {}; d2.dokumen[key] = d.dokumen[key]; d2.folderUrl = d.folderUrl; d2.folderId = folder.getId();
     const versi = Number(now2.versi) + 1;
     sheet_('Berkas').getRange(now2._row, 5, 1, 6).setValues([[JSON.stringify(d2), versi, now2.dibuatOleh, now2.dibuatPada, u.nama, now]]);
     log_(u, 'BUAT_DOKUMEN', id, d.nama, judul + (lama ? ' (dibuat ulang; versi lama di folder Arsip)' : '') + ' | ' + d.dokumen[key].url);
-    return { dok: d.dokumen[key], folderUrl: d.folderUrl, versi: versi, cadangan: cadangan, galat: galat };
+    return { dok: d.dokumen[key], folderUrl: d.folderUrl, folderId: folder.getId(), versi: versi, cadangan: cadangan, galat: galat };
   } finally {
     lock.releaseLock();
   }

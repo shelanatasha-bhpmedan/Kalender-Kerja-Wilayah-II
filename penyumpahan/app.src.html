@@ -360,7 +360,7 @@ const WA=()=>`<b>${esc(SET.wa)}</b>`;
 const ttdKepala=()=>`<p class="ni" data-keep="ttd" style="margin-left:262pt;margin-top:20pt;text-align:left">Kepala,<br><br><br><br>${esc(SET.kepala)}</p>`;
 const lurahNm=r=>{const k=String(r.kelurahan||'').trim().replace(/^(Lurah|Kelurahan)\s+/i,'');return /^Desa\s/i.test(k)?'Kepala '+V(k):'Lurah '+V(k)};
 const kanwil=r=>r.kanwilTembusan||SET.kanwilTembusan;
-const tembusan=(r,lurah=true,pertinggal=false)=>`<p class="ni" data-keep="1" style="margin-top:22pt;font-size:10pt;line-height:1">Tembusan:</p><ol data-keep="1" style="font-size:10pt;line-height:1"><li>Direktur Jenderal Administrasi Hukum Umum Kementerian Hukum RI;</li><li>Direktur Perdata Direktorat Jenderal Administrasi Hukum Umum;</li><li>${esc(kanwil(r))}${lurah?';':''}</li>${lurah?`<li>${lurahNm(r)}${pertinggal?';':''}</li>`:''}${pertinggal?'<li>Pertinggal</li>':''}</ol>`;
+const tembusan=(r,lurah=true,pertinggal=false)=>`<p class="ni" data-keep="1" style="margin-top:22pt;font-size:8pt;line-height:1">Tembusan:</p><ol data-keep="1" style="font-size:8pt;line-height:1"><li>Direktur Jenderal Administrasi Hukum Umum Kementerian Hukum RI;</li><li>Direktur Perdata Direktorat Jenderal Administrasi Hukum Umum;</li><li>${esc(kanwil(r))}${lurah?';':''}</li>${lurah?`<li>${lurahNm(r)}${pertinggal?';':''}</li>`:''}${pertinggal?'<li>Pertinggal</li>':''}</ol>`;
 const penetapan=r=>`Menindaklanjuti Penetapan ${esc(r.pengadilan)} Nomor: ${V(r.nomorPenetapan)} tertanggal ${tgl(r.tglPenetapan)} yang telah memperoleh kekuatan hukum tetap`;
 const blnThn=s=>{const d=pd(s);return d?`${BLN[d.getMonth()]} ${d.getFullYear()}`:'…'};
 /* kota/kabupaten dari teks wilayah: hanya segmen yang diawali Kota/Kabupaten — nama kelurahan seperti "Kota Matsum I" tidak terambil */
@@ -370,6 +370,11 @@ const kota=r=>r.kotaPermohonan||(kotaKab(r.kelurahan)||kotaKab(r.alamat)||{}).na
 /* alamat lengkap pemohon (wali/pengampu): alamat + kelurahan/kecamatan/kota bila belum tercantum */
 function alamatLengkap(r){const a=String(r.alamat||'').trim().replace(/[\s.,;]+$/,''),k=String(r.kelurahan||'').trim().replace(/[\s.,;]+$/,'');if(!a||!k)return a||k;
   const kn=k.match(/Kel(?:urahan)?\.?\s+([^,]+)/i);return kn&&a.toLowerCase().includes(kn[1].trim().toLowerCase())?a:a+', '+k}
+const KANTOR_BHP=/balai harta peninggalan|\bbhp\b|jl\.?\s*listrik|jalan listrik/i;
+const lokasiSumpah=r=>r.zoom?'zoom':KANTOR_BHP.test(String(r.tempat||''))?'kantor':'rumah';
+const kalimatKegiatan=(r,s)=>({kantor:`Balai Harta Peninggalan Medan akan menyelenggarakan kegiatan Pengangkatan Sumpah tersebut di Kantor Balai Harta Peninggalan Medan pada:`,
+  zoom:`Balai Harta Peninggalan Medan akan menyelenggarakan kegiatan Pengangkatan Sumpah tersebut secara virtual (daring) pada:`,
+  rumah:`Tim Balai Harta Peninggalan Medan akan melakukan kunjungan untuk menyelenggarakan kegiatan Pengangkatan Sumpah tersebut di kediaman ${s} pada:`})[lokasiSumpah(r)];
 const tempatSumpah=r=>String(r.tempat||'').trim()||alamatLengkap(r)||'Kediaman '+(r.nama||'');
 const tempatTgl=r=>`${esc(kota(r))},&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${blnThn(r.tglSumpah)}`;
 const bapP=r=>pjCari(r.bapOleh===undefined?r.muda:r.bapOleh);
@@ -399,13 +404,13 @@ const HARTA=[['hartaTetap','BARANG-BARANG TETAP','tanah'],['hartaTunai','UANG TU
 const hv=(r,k,old)=>r[k]??(old?r[old]:'')??'';
 const baris=t=>String(t||'').split('\n').map(s=>s.trim()).filter(Boolean);
 /* kosong → baris titik-titik bernomor untuk diisi tangan oleh petugas di lapangan */
-const garis=(n,left,i)=>`<p class="ni" data-n="${i+1}." data-line="1" style="margin-left:${left}pt;margin-top:${i?0:2}pt;margin-bottom:0">&nbsp;</p>`;
+const garis=(n,left,i)=>`<p class="ni" data-n="${i+1}." data-line="1"${i<n-1?' data-keep="1"':''} style="margin-left:${left}pt;margin-top:${i?0:2}pt;margin-bottom:0">&nbsp;</p>`;
 const daftarHarta=(t,n=3)=>{const b=baris(t);return b.length?b.map((x,i)=>NP((i+1)+'.',54,esc(x))).join(''):[...Array(n)].map((_,i)=>garis(n,54,i)).join('')};
 function head(no,hal,r){return `<table class="hd" style="width:100%;margin-bottom:12pt"><tr><td style="width:70pt">Nomor</td><td>:</td><td>${V(no)}</td><td style="text-align:right">${tgl(r.tanggalSurat)}</td></tr>
 <tr><td>Sifat</td><td>:</td><td>Segera</td><td></td></tr><tr><td>Lampiran</td><td>:</td><td>-</td><td></td></tr>
 <tr><td>Hal</td><td>:</td><td colspan=2>${hal}</td></tr></table>`}
 const jadwal=(r,note)=>`<table style="margin:0 0 10pt 36pt"><tr><td style="width:90pt">Hari/Tanggal</td><td>:</td><td>${hari(r.tglSumpah)} / ${tgl(r.tglSumpah)}</td></tr>
-<tr><td>Pukul</td><td>:</td><td>${V(r.waktu)}<br>(${note} ${WA()})</td></tr><tr><td>Tempat</td><td>:</td><td>${esc(tempatSumpah(r))}</td></tr></table>`;
+<tr><td>Pukul</td><td>:</td><td>${V(r.waktu)}<br>(${note} ${WA()})</td></tr><tr><td>Tempat</td><td>:</td><td>${tempatTampil(r)}</td></tr>${r.zoom?`<tr><td>Tautan Zoom</td><td>:</td><td>${esc(r.zoom)}</td></tr>`:''}</table>`;
 const yth=(nama,alamat)=>`<p class="ni" style="text-align:left">Yth. <b>${nama}</b><br>di</p><p class="ni" style="margin-left:18pt;max-width:260pt;text-align:left">${alamat}</p><br>`;
 const syarat=(items,after)=>`<ol style="margin-left:36pt;line-height:1.15">${items.map(x=>`<li>${x}</li>`).join('')}</ol>${after.map(x=>`<p class="ni" style="margin-left:54pt;line-height:1.15">${x}</p>`).join('')}`;
 /* dasar hukum PNBP: PP 30/2026 (berlaku 1 Agustus 2026, menggantikan PP 45/2024); bisa diubah di Pengaturan bila ada peraturan baru */
@@ -416,9 +421,9 @@ const BILLING='(Mekanisme pembayaran akan dipandu melalui kode pembayaran/<i>bil
 
 const tabelJadwal=r=>`<table style="margin:0 0 10pt 36pt"><tr><td style="width:100pt">Hari / Tanggal</td><td>:</td><td>${hari(r.tglSumpah)}, ${tgl(r.tglSumpah)}</td></tr>
 <tr><td>Waktu</td><td>:</td><td>${V(r.waktu)}</td></tr><tr><td>Tempat</td><td>:</td><td>${esc(tempatSumpah(r))}</td></tr>${r.zoom?`<tr><td>Link Zoom</td><td>:</td><td>${esc(r.zoom)}</td></tr>`:''}</table>`;
-const KANTOR_BHP=/balai harta peninggalan|\bbhp\b|jl\.?\s*listrik|jalan listrik/i;
-const tabelUndangan=r=>{const t=tempatSumpah(r),kantor=KANTOR_BHP.test(t)&&!r.zoom;
-  const tm=kantor?(/ruang/i.test(t)?esc(t.split(/,\s*(?=J(?:a)?l)/i)[0]):'Ruang Rapat Balai Harta Peninggalan Medan')+'<br>'+esc(SET.alamat||'Jl. Listrik No. 10 Medan').replace(/^Jalan\b/,'Jl.'):r.zoom?'Virtual (Zoom Meeting)':esc(t);
+const tempatTampil=r=>{const t=tempatSumpah(r),kantor=KANTOR_BHP.test(t)&&!r.zoom;
+  return kantor?(/ruang/i.test(t)?esc(t.split(/,\s*(?=J(?:a)?l)/i)[0]):'Ruang Rapat Balai Harta Peninggalan Medan')+'<br>'+esc(SET.alamat||'Jl. Listrik No. 10 Medan').replace(/^Jalan\b/,'Jl.'):r.zoom?'Virtual (Zoom Meeting)':esc(t)};
+const tabelUndangan=r=>{const tm=tempatTampil(r);
   return `<table style="margin:0 0 10pt 36pt"><tr><td style="width:100pt">Hari/Tanggal</td><td>:</td><td>${hari(r.tglSumpah)} / ${tgl(r.tglSumpah)}</td></tr>
 <tr><td>Pukul</td><td>:</td><td>${V(r.waktu)}</td></tr><tr><td>Tempat</td><td>:</td><td>${tm}</td></tr>${r.zoom?`<tr><td>Tautan Zoom</td><td>:</td><td>${esc(r.zoom)}</td></tr>`:''}</table>`};
 const DOCS_EXTRA={
@@ -434,7 +439,7 @@ const DOCS_EXTRA={
       `Biaya Penerimaan Negara Bukan Pajak (PNBP) sebesar Rp 200.000,- (Dua Ratus Ribu Rupiah) untuk layanan Berita Acara Penyumpahan ${d.jenisTxt}. Nominal ini ditetapkan secara resmi berdasarkan ${esc(dasarPnbp())}. ${BILLING}`],[])+
 `<p style="margin-top:10pt">Demikian surat pemberitahuan ini kami sampaikan. Untuk informasi lebih lanjut, ${s} dapat menghubungi <i>Contact Person</i> (WhatsApp) Layanan Perwalian dan Pengampuan di nomor: ${WA()}. Atas perhatian dan kesediaan ${s}, kami ucapkan terima kasih.</p>`+ttdKepala()+tembusan(r,!!String(r.kelurahan||'').trim(),true)}}};
 const DOCS={
-  permohonan:{nama:r=>'Surat Permohonan Penyumpahan',sty:{font:'Times New Roman',line:300,tline:300},fn:r=>{const d=derive(r);
+  permohonan:{nama:r=>'Surat Permohonan Penyumpahan',sty:{font:'Times New Roman',line:276,tline:264},fn:r=>{const d=derive(r);
     /* format surat permohonan penyumpahan di kantor BHP (contoh: permohonan Limba Sulinto Ernawati) */
     const tc=x=>esc(String(x||'').toLowerCase().replace(/(^|[\s(.'-])(\p{L})/gu,(m,a,c)=>a+c.toUpperCase()).replace(/\b(Bin|Binti|Br)\b/g,m=>m.toLowerCase()));
     const lbl=d.w?'Anak':'Terampu',t=r.terampu||{},sap=d.w?'':(t.jk==='Perempuan'?'Ibu ':t.jk==='Laki-laki'?'Bapak ':'');
@@ -452,24 +457,24 @@ ${tbl([['Nama',tc(r.nama)||V('')],['Tempat/Tgl. Lahir',(r.tempatLahir?tc(r.tempa
 ${tbl([[esc(jp.replace(/\s+/g,' ')),esc(kotaPg)],['Nomor Penetapan',V(r.nomorPenetapan)],['Tanggal Penetapan',r.tglPenetapan?tgl(r.tglPenetapan):V('')],[`Nama ${lbl}`,objekNm]])}
 <p style="text-indent:0">Bersama ini saya lampirkan surat-surat yang diperlukan yang telah dilegalisir oleh pejabat yang berwenang.</p>
 <p style="text-indent:0;margin-top:8pt">Demikian permohonan ini saya ajukan. Atas perhatian Bapak/Ibu, saya ucapkan terima kasih.</p>
-<p class="ni" style="margin-left:262pt;margin-top:16pt;text-align:left">Pemohon,<br><br><span style="font-size:7pt">Materai<br>10000</span><br><br>(${tc(r.nama)||V('')})</p>`}},
+<p class="ni" data-keep="ttd" style="margin-left:262pt;margin-top:12pt;text-align:left">Pemohon,<br><br><span style="font-size:7pt">Materai<br>10000</span><br><br>(${tc(r.nama)||V('')})</p>`}},
 
   surat:{nama:r=>`Surat Antar ke ${derive(r).J}`,sty:{line:360},fn:r=>{const d=derive(r),s=d.sapa;
-    if(d.w)return kop()+head(r.nomorSurat,'Pengambilan Sumpah Wali<br>Dan Inventarisasi Harta',r)+yth(`${s} ${V(r.nama)}`,V(r.alamat))+
+    if(d.w)return kop()+head(r.nomorSurat,'Pengambilan Sumpah Wali<br>Dan Inventarisasi Harta',r)+yth(`${s} ${V(r.nama)}`,V(alamatLengkap(r)||r.alamat))+
 `<p>${penetapan(r)}, ${s} telah ditunjuk secara resmi sebagai Wali atas <b>${V(d.objek)}</b> (selanjutnya disebut sebagai "Anak").</p>
 <p>Berkaitan dengan penetapan tersebut, Balai Harta Peninggalan Medan sangat menghargai serta mendukung penuh kesediaan ${s} dalam menjalankan tugas sebagai Wali. Berdasarkan amanat Pasal 366 Kitab Undang-Undang Hukum Perdata (KUHPerdata), BHP bertugas sebagai Wali Pengawas. Peran kami adalah mendampingi dan memberikan konsultasi hukum kepada ${s} guna memastikan bahwa pengelolaan aset dan perlindungan hak Anak berjalan dengan baik serta melindungi ${s} dari kemungkinan prasangka negatif dari pihak lain.</p>
 <p>Selanjutnya, sesuai dengan perintah peraturan perundang-undangan yang tertuang dalam Pasal 362 KUHPerdata, setiap wali diwajibkan untuk diangkat sumpah sebelum mulai menjalankan tugas. Penyumpahan ini sangat penting dan menjadi syarat sah agar ${s} dapat bertindak secara hukum mewakili Anak untuk berbagai keperluan administratif.</p>
-<p>Dalam rangka mewujudkan pelayanan publik, Tim BHP Medan akan melakukan kunjungan untuk menyelenggarakan kegiatan Pengangkatan Sumpah tersebut di kediaman ${s} pada:</p>`+
+<p>Dalam rangka mewujudkan pelayanan publik, ${kalimatKegiatan(r,s)}</p>`+
     jadwal(r,'Mohon sampaikan kesediaan waktu dengan menghubungi Whatsapp Layanan Perwalian Pengampuan di nomor')+
 `<p>Guna kelengkapan administrasi Berita Acara Penyumpahan dan Pencatatan Harta sesuai ketentuan peraturan perundang-undangan, kami memohon kesediaan ${s} untuk mempersiapkan dokumen pendukung pada saat kegiatan untuk dipindai oleh petugas sebagai dokumen pendukung arsip, yang meliputi:</p>`+
     syarat(['Kartu Tanda Penduduk (KTP) Wali dan Anak;','Kartu Keluarga (KK);','Akta Kelahiran Anak;','Dokumen Kepemilikan Aset / Harta Kekayaan Yang Menjadi Hak Anak;','Kartu Tanda Penduduk (KTP) 2 (dua) orang saksi dari pihak Kepala Lingkungan dan/atau Keluarga;',
       'Biaya Penerimaan Negara Bukan Pajak (PNBP) sebesar Rp 200.000,- (Dua Ratus Ribu Rupiah) untuk layanan Berita Acara Penyumpahan Perwalian dan Biaya 4 (empat) lembar Meterai senilai Rp 40.000,- (Empat Puluh Ribu Rupiah).'],[pnbpTxt(),BILLING])+
 `<p style="margin-top:10pt">Demikian surat pemberitahuan ini kami sampaikan. Untuk informasi lebih lanjut, ${s} dapat menghubungi <i>Contact Person</i> (WhatsApp) Layanan Perwalian di nomor: ${WA()}. Atas perhatian dan kesediaan ${s}, kami ucapkan terima kasih.</p>`+ttdKepala()+tembusan(r);
-    return kop()+head(r.nomorSurat,'Pengambilan Sumpah Pengampu<br>Dan Inventarisasi Harta',r)+yth(`${s} ${V(r.nama)}`,V(r.alamat))+
+    return kop()+head(r.nomorSurat,'Pengambilan Sumpah Pengampu<br>Dan Inventarisasi Harta',r)+yth(`${s} ${V(r.nama)}`,V(alamatLengkap(r)||r.alamat))+
 `<p>${penetapan(r)}, ${s} telah ditunjuk secara resmi sebagai Pengampu atas <b>${V(d.objek)}</b> (selanjutnya disebut sebagai "Terampu").</p>
 <p>Berkaitan dengan penetapan tersebut, Balai Harta Peninggalan Medan sangat menghargai serta mendukung penuh kesediaan ${s} dalam menjalankan tugas sebagai Pengampu. Berdasarkan amanat Pasal 449 Kitab Undang-Undang Hukum Perdata (KUHPerdata), BHP bertugas sebagai Pengampu Pengawas dalam rangka mendampingi dan memberikan konsultasi hukum kepada ${s} guna memastikan bahwa pengelolaan aset dan perlindungan hak Terampu berjalan dengan baik serta melindungi ${s} dari kemungkinan prasangka negatif dari pihak lain.</p>
 <p>Selanjutnya, sesuai dengan perintah peraturan perundang-undangan yang tertuang dalam Pasal 362 KUHPerdata, setiap pengampu diwajibkan untuk diangkat sumpah sebelum mulai menjalankan tugas. Penyumpahan ini sangat penting dan menjadi syarat sah agar ${s} dapat bertindak secara hukum mewakili Terampu untuk berbagai keperluan administratif.</p>
-<p>Dalam rangka mewujudkan pelayanan publik, Tim Balai Harta Peninggalan Medan akan melakukan kunjungan untuk menyelenggarakan kegiatan Pengangkatan Sumpah tersebut di kediaman ${s} pada:</p>`+
+<p>Dalam rangka mewujudkan pelayanan publik, ${kalimatKegiatan(r,s)}</p>`+
     jadwal(r,'Untuk konfirmasi waktu pelaksanaan sumpah, mohon untuk menghubungi Whatsapp Layanan Perwalian Pengampuan di nomor')+
 `<p>Guna kelengkapan administrasi Berita Acara Penyumpahan dan Pencatatan Harta sesuai ketentuan peraturan perundang-undangan, kami memohon kesediaan ${s} untuk mempersiapkan dokumen pendukung pada saat kegiatan, yang meliputi:</p>`+
     syarat(['Fotokopi Kartu Tanda Penduduk (KTP) Pengampu dan Terampu;','Fotokopi Kartu Keluarga (KK);','Fotokopi Akta Kelahiran Terampu;','Fotokopi Surat Keterangan Kondisi Medis Terampu;','Fotokopi Dokumen Kepemilikan Aset / Harta Kekayaan Terampu;','Fotokopi Kartu Tanda Penduduk (KTP) 2 (dua) orang saksi dari pihak Kepala Lingkungan dan/atau Keluarga;','Meterai senilai Rp 10.000,- (Sepuluh Ribu Rupiah) sebanyak 4 (empat) lembar;',
@@ -481,9 +486,9 @@ ${tbl([[esc(jp.replace(/\s+/g,' ')),esc(kotaPg)],['Nomor Penetapan',V(r.nomorPen
 `<p>${penetapan(r)}, <b>${V(r.nama)}</b> telah ditunjuk secara resmi sebagai ${J} atas <b>${V(d.objek)}</b> (selanjutnya disebut sebagai "${d.pihak}"). Adapun ${J} tersebut merupakan warga yang berdomisili di lingkungan ${V(r.kelurahan)}.</p>
 <p>Berdasarkan amanat Pasal ${d.w?366:449} Kitab Undang-Undang Hukum Perdata (KUHPerdata), BHP bertugas sebagai ${J} Pengawas dalam rangka mendampingi dan memberikan konsultasi hukum kepada ${J} guna memastikan bahwa pengelolaan aset dan perlindungan hak ${d.pihak} berjalan dengan baik serta melindungi ${J} dari kemungkinan prasangka negatif dari pihak lain.</p>
 <p>Selanjutnya, sesuai dengan perintah peraturan perundang-undangan yang tertuang dalam Pasal 362 KUHPerdata, setiap ${d.w?'Wali':'pengampu'} diwajibkan untuk diangkat sumpah sebelum mulai menjalankan tugas. Penyumpahan ini sangat penting dan menjadi syarat sah agar ${J} dapat bertindak secara hukum mewakili ${d.pihak} untuk berbagai keperluan administratif.</p>
-<p>Dalam rangka mewujudkan pelayanan publik, Tim Balai Harta Peninggalan Medan akan melakukan kunjungan untuk menyelenggarakan kegiatan Pengangkatan Sumpah tersebut di kediaman ${J} pada:</p>`+
+<p>Dalam rangka mewujudkan pelayanan publik, ${kalimatKegiatan(r,J)}</p>`+
     jadwal(r,`Untuk konfirmasi waktu pelaksanaan sumpah, mohon diinformasikan kepada ${J} untuk menghubungi Whatsapp Layanan Perwalian Pengampuan di nomor`)+
-`<p>Sehubungan dengan hal tersebut, Tim Balai Harta Peninggalan Medan akan melakukan koordinasi dengan pihak Kelurahan untuk selanjutnya memohon kesediaan Bapak/Ibu untuk mendampingi Tim dalam pelaksanaan kunjungan ke kediaman <b>${V(r.nama)}</b>.</p>
+`<p>${lokasiSumpah(r)==='rumah'?`Sehubungan dengan hal tersebut, Tim Balai Harta Peninggalan Medan akan melakukan koordinasi dengan pihak Kelurahan untuk selanjutnya memohon kesediaan Bapak/Ibu untuk mendampingi Tim dalam pelaksanaan kunjungan ke kediaman <b>${V(r.nama)}</b>.`:`Sehubungan dengan hal tersebut, kami menyampaikan pemberitahuan ini kepada pihak Kelurahan sebagai informasi dan koordinasi atas warga yang bersangkutan, yaitu <b>${V(r.nama)}</b>.`}</p>
 <p>Demikian surat pemberitahuan ini kami sampaikan. Atas perhatian dan kesediaan Bapak/Ibu, kami ucapkan terima kasih.</p>`+ttdKepala()+tembusan(r,false)}},
 
   bap:{nama:()=>'BA Penghadapan (BAP)',sty:{line:276},fn:r=>{const d=derive(r),p=bapP(r),isi=baris(r.isiBap);
@@ -820,10 +825,12 @@ const boxCek=w=>w.length?`<div style="border:1.5px solid #f6c343;background:#fff
 
 /* ---------------- proses otomatis: simpan → nomor SPS → Google Doc ---------------- */
 async function gdocCore(key,keys,judul){const blob=await buatDocx(keys);const b64=await new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.readAsDataURL(blob)});
-  const r=await api('apiBuatDokumen',cur.id,key,judul,b64);cur.dokumen=cur.dokumen||{};cur.dokumen[key]=r.dok;cur.folderUrl=r.folderUrl;cur._versi=r.versi;return r.dok}
+  const id=cur.id,rec=cur;let r,err;for(let i=0;i<2&&!r;i++){try{r=await api('apiBuatDokumen',id,key,judul,b64)}catch(e){err=e;if(/Sesi|SESI|dihapus|Simpan berkas/.test(e.message||''))break;await new Promise(k=>setTimeout(k,1200))}}
+  if(!r)throw err;rec.dokumen=rec.dokumen||{};rec.dokumen[key]=r.dok;rec.folderUrl=r.folderUrl;if(r.folderId)rec.folderId=r.folderId;rec._versi=Math.max(rec._versi||0,r.versi||0);return r.dok}
 let PILIH=null;
-function pilihDefault(r){const sudah=g=>(r.dokumen||{})[g];const L=['surat','lurah','penyumpahan'].filter(g=>!sudah(g));
-  if(r.zoom||/kantor|kanwil|balai/i.test(r.tempat||''))['undangan'].forEach(g=>{if(!sudah(g))L.push(g)});
+function pilihDefault(r){const sudah=g=>(r.dokumen||{})[g],dtg=r.zoom||/kantor|kanwil|balai|\bbhp\b|jl\.?\s*listrik/i.test(r.tempat||'');
+  /* sumpah di kantor BHP / Kanwil / Zoom → Undangan; sumpah di kediaman → Surat Antar + Surat Lurah */
+  const L=(dtg?['undangan','penyumpahan']:['surat','lurah','penyumpahan']).filter(g=>!sudah(g));
   return L.length?L:['penyumpahan']}
 function paketBerkas(){const r=cur,P=PILIH||pilihDefault(r);PILIH=P;
   const siap=Object.keys(GRUP).filter(g=>(r.dokumen||{})[g]).length,tot=Object.keys(GRUP).length;
@@ -846,9 +853,10 @@ async function jalankanOtomatis(tglNo){const P=(PILIH||pilihDefault(cur)).filter
   try{await flush();set('simpan',1,'Berkas tersimpan')}catch(e){set('simpan',0,esc(e.message));gagal=true}
   for(const [k,f] of tanpa){if(gagal)break;try{const inf=infoNomor(k,cur);if(tglNo)inf.tanggalNomor=tglNo;const r=await api('apiAmbilNomor',cur.id,f,inf);cur[f]=r.nomor;cur._versi=r.versi;if(r.tanggalSurat)cur.tanggalSurat=r.tanggalSurat;set('n_'+k,1,esc(DOCS[k].nama(cur)+': '+r.nomor))}
     catch(e){set('n_'+k,0,esc(DOCS[k].nama(cur)+' — '+(e.message||e)));gagal=true}}
-  for(const g of P){if(gagal)break;const nm=GRUP[g].nama(cur);
+  /* Google Doc dibuat bersamaan (paralel) — total waktu ≈ satu dokumen, bukan dijumlah */
+  if(!gagal)await Promise.all(P.map(async g=>{const nm=GRUP[g].nama(cur);
     try{if(GAS){const dok=await gdocCore(g,GRUP[g].keys,nm);set('d_'+g,1,`<a href="${dok.url}" target="_blank" rel="noopener">${esc(nm)}</a>`)}else{await dl(GRUP[g].keys,nm);set('d_'+g,1,esc(nm)+' (mode demo: DOCX diunduh)')}}
-    catch(e){set('d_'+g,0,esc(nm+' — '+(e.message||e)));gagal=true}}
+    catch(e){set('d_'+g,0,esc(nm+' — '+(e.message||e)));gagal=true}}));
   $('#prEnd').innerHTML=(cur.folderUrl?`<a class="btn pri" href="${cur.folderUrl}" target="_blank" rel="noopener">📁 Buka folder</a> `:'')+`<button onclick="dlgClose();tab='dok';renderMain()">${gagal?'Tutup & periksa':'Selesai'}</button>`;
   $('#gDlg').dataset.lock='';renderMain()}
 
@@ -1069,7 +1077,7 @@ function para(el,o={}){
   const r=(o.prefix?o.prefix.replace('<w:r><w:t>','<w:r>'+rPr(base)+'<w:t>'):'')+runs(tk);
   const ind=left||first||right||o.hang?`<w:ind w:left="${left}" w:right="${right}"${o.hang?` w:hanging="${o.hang}"`:` w:firstLine="${first}"`}/>`:'';
   const ln=el.dataset&&el.dataset.line;
-  return `<w:p><w:pPr>${o.keep?'<w:keepNext/><w:keepLines/>':tk.some(k=>k.br)?'<w:keepLines/>':''}<w:widowControl/>${ln?'<w:pBdr><w:bottom w:val="dotted" w:sz="6" w:space="1" w:color="000000"/><w:between w:val="dotted" w:sz="6" w:space="1" w:color="000000"/></w:pBdr>':''}<w:spacing w:before="${tw(ptOf(s.marginTop))}" w:after="${o.after??tw(ptOf(s.marginBottom))}" ${ln?'w:line="480" w:lineRule="exact"':`w:line="${line}" w:lineRule="auto"`}/>${ind}<w:jc w:val="${jc}"/></w:pPr>${r}</w:p>`}
+  return `<w:p><w:pPr>${o.keep?'<w:keepNext/><w:keepLines/>':(o.utuh||tk.some(k=>k.br))?'<w:keepLines/>':''}<w:widowControl/>${ln?'<w:pBdr><w:bottom w:val="dotted" w:sz="6" w:space="1" w:color="000000"/><w:between w:val="dotted" w:sz="6" w:space="1" w:color="000000"/></w:pBdr>':''}<w:spacing w:before="${tw(ptOf(s.marginTop))}" w:after="${o.after??tw(ptOf(s.marginBottom))}" ${ln?'w:line="480" w:lineRule="exact"':`w:line="${line}" w:lineRule="auto"`}/>${ind}<w:jc w:val="${jc}"/></w:pPr>${r}</w:p>`}
 const spacer=(pt,keep)=>`<w:p><w:pPr>${keep?'<w:keepNext/>':''}<w:spacing w:before="0" w:after="0" w:line="${Math.max(20,tw(pt))}" w:lineRule="exact"/></w:pPr><w:r><w:rPr><w:sz w:val="2"/></w:rPr><w:t></w:t></w:r></w:p>`;
 const noBorders='<w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>';
 function kopXml(){
@@ -1077,7 +1085,7 @@ function kopXml(){
   const lg=1240,W=DX.W;
   const tx=L.map(([t,sz,b],i)=>`<w:p><w:pPr><w:spacing w:before="0" w:after="${i===L.length-1?60:0}" w:line="264" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr><w:r>${rPr({sz,b})}<w:t xml:space="preserve">${xe(t||'')}</w:t></w:r></w:p>`).join('');
   return `<w:tbl><w:tblPr><w:tblW w:w="${W}" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${lg}"/><w:gridCol w:w="${W-lg}"/></w:tblGrid><w:tr><w:tc><w:tcPr><w:tcW w:w="${lg}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:spacing w:before="0" w:after="60"/></w:pPr>${imgRun()}</w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="${W-lg}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${tx}</w:tc></w:tr></w:tbl>`+spacer(12)}
-function tableXml(t){
+function tableXml(t,ikut=[]){
   const rows=[...t.rows];if(!rows.length)return'';
   const n=Math.max(...rows.map(r=>[...r.cells].reduce((a,c)=>a+(c.colSpan||1),0)));
   const ttd=t.classList.contains('ttd'),indL=ptOf(t.style.marginLeft);
@@ -1086,30 +1094,37 @@ function tableXml(t){
   const free=w.filter(x=>!x).length,rest=Math.max(40,(avail-w.reduce((a,b)=>a+b,0))/(free||1));
   const cols=w.map(x=>tw(x||rest)),tot=cols.reduce((a,b)=>a+b,0);
   /* blok tanda tangan: semua baris digabung jadi 1 baris tabel (cantSplit) agar tidak terbelah antar halaman di Word/Google Docs */
-  if(ttd&&rows.every(r=>r.cells.length===n&&[...r.cells].every(c=>(c.colSpan||1)===1))){
+  const seragam=tb=>[...tb.rows].every(r=>r.cells.length===n&&[...r.cells].every(c=>(c.colSpan||1)===1));
+  if(ttd&&seragam(t)&&ikut.every(seragam)){
+    /* baris dari tabel tanda tangan berikutnya (mis. Saksi 1/Saksi 2) ikut digabung; jarak atasnya jadi spasi */
+    rows.forEach(r=>{r._mt=0});ikut.forEach(tb=>[...tb.rows].forEach((r,i)=>{r._mt=i?0:ptOf(tb.style.marginTop);rows.push(r)}));
     /* jumlah baris tiap sel diperkirakan agar baris kiri & kanan tetap sejajar */
     const nb=(c,ci)=>c.innerHTML.split(/<br\s*\/?>/i).reduce((a,x)=>a+Math.max(1,Math.ceil(x.replace(/<[^>]+>/g,'').trim().length*6.6/(cols[ci]/20-4))),0);
     const mx=rows.map(r=>Math.max(...[...r.cells].map((c,ci)=>c.textContent.trim()?nb(c,ci):1)));
     const tc=[...Array(n)].map((_,ci)=>`<w:tc><w:tcPr><w:tcW w:w="${cols[ci]}" w:type="dxa"/></w:tcPr>${rows.map((r,ri)=>{const c=r.cells[ci],h=ptOf(r.cells[0].style.height)||ptOf(c.style.height),k=c.textContent.trim()?nb(c,ci):1;
-      return para(c,{jc:t.classList.contains('ctr')?'center':'left',noInd:1,after:0,line:STY.tline||276,keep:1})+(mx[ri]>k?spacer((mx[ri]-k)*(STY.tline||276)/240*12,1):'')+(h>14?spacer(h-14,1):'')}).join('')}</w:tc>`).join('');
+      return (r._mt?spacer(r._mt,1):'')+para(c,{jc:r.closest('table').classList.contains('ctr')?'center':'left',noInd:1,after:0,line:STY.tline||276,keep:1})+(mx[ri]>k?spacer((mx[ri]-k)*(STY.tline||276)/240*12*1.149,1):'')+(h>14?spacer(h-14,1):'')}).join('')}</w:tc>`).join('');
     return (ptOf(t.style.marginTop)?spacer(ptOf(t.style.marginTop),ttd):'')+`<w:tbl><w:tblPr><w:tblW w:w="${tot}" w:type="dxa"/><w:tblInd w:w="${tw(indL)}" w:type="dxa"/><w:tblLayout w:type="fixed"/>${noBorders}<w:tblCellMar><w:left w:w="0" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${cols.map(c=>`<w:gridCol w:w="${c}"/>`).join('')}</w:tblGrid><w:tr><w:trPr><w:cantSplit/></w:trPr>${tc}</w:tr></w:tbl>`+spacer(ptOf(t.style.marginBottom)||4)}
+  if(ikut.length)return null;
   const body=rows.map((r,ri)=>{let i=0;const h=Math.max(...[...r.cells].map(c=>ptOf(c.style.height)),0);
     return `<w:tr><w:trPr><w:cantSplit/>${h?`<w:trHeight w:val="${tw(h)}"/>`:''}</w:trPr>${[...r.cells].map(c=>{const sp=c.colSpan||1,cw=cols.slice(i,i+sp).reduce((a,b)=>a+b,0);i+=sp;
       return `<w:tc><w:tcPr><w:tcW w:w="${cw}" w:type="dxa"/>${sp>1?`<w:gridSpan w:val="${sp}"/>`:''}</w:tcPr>${para(c,{jc:ttd&&t.classList.contains('ctr')?'center':'left',noInd:1,after:ttd?0:40,line:STY.tline||276,keep:ri<rows.length-1&&(ttd||rows.length<=8)})}</w:tc>`}).join('')}</w:tr>`}).join('');
   return (ptOf(t.style.marginTop)?spacer(ptOf(t.style.marginTop),ttd):'')+`<w:tbl><w:tblPr><w:tblW w:w="${tot}" w:type="dxa"/><w:tblInd w:w="${tw(indL)}" w:type="dxa"/><w:tblLayout w:type="fixed"/>${noBorders}<w:tblCellMar><w:left w:w="0" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${cols.map(c=>`<w:gridCol w:w="${c}"/>`).join('')}</w:tblGrid>${body}</w:tbl>`+spacer(ptOf(t.style.marginBottom)||4)}
 function blocksXml(html){
-  const root=new DOMParser().parseFromString(`<div>${html}</div>`,'text/html').body.firstChild;let x='';
+  const root=new DOMParser().parseFromString(`<div>${html}</div>`,'text/html').body.firstChild;let x='';const dipakai=new Set();
+  const isTtd=e=>e&&e.tagName==='TABLE'&&e.classList.contains('ttd');
   for(const el of root.childNodes){
-    if(el.nodeType!==1)continue;
-    if(el.tagName==='TABLE')x+=el.classList.contains('kop')?kopXml():tableXml(el);
-    else if(el.tagName==='P'&&el.dataset.n)x+=para(el,{keep:el.dataset.b||/:\s*$/.test(el.textContent),left:18,hang:360,prefix:`<w:r>${rPr(el.dataset.b?{b:1}:{})}<w:t>${xe(el.dataset.n)}</w:t></w:r><w:r><w:tab/></w:r>`});
+    if(el.nodeType!==1||dipakai.has(el))continue;
+    if(el.tagName==='TABLE'&&isTtd(el)){const ikut=[];let nx=el.nextElementSibling;while(isTtd(nx)){ikut.push(nx);nx=nx.nextElementSibling}
+      const g=ikut.length?tableXml(el,ikut):null;if(g){ikut.forEach(e=>dipakai.add(e));x+=g}else x+=tableXml(el)}
+    else if(el.tagName==='TABLE')x+=el.classList.contains('kop')?kopXml():tableXml(el);
+    else if(el.tagName==='P'&&el.dataset.n)x+=para(el,{keep:el.dataset.b||el.dataset.keep||/:\s*$/.test(el.textContent),left:18,hang:360,prefix:`<w:r>${rPr(el.dataset.b?{b:1}:{})}<w:t>${xe(el.dataset.n)}</w:t></w:r><w:r><w:tab/></w:r>`});
     else if(el.tagName==='P'||el.tagName==='DIV'){const nx=el.nextElementSibling;
       /* penutup ("Demikian …") tidak dipisah dari tanda tangan; tanda tangan tidak dipisah dari tembusan */
       /* kalimat pengantar/judul yang berakhir titik dua ikut isi di bawahnya */
       x+=para(el,el.dataset.keep||/:\s*$/.test(el.textContent)||(nx&&(nx.dataset.keep==='ttd'||nx.tagName==='TABLE'&&nx.classList.contains('ttd')))?{keep:1}:{})}
     else if(el.tagName==='OL'||el.tagName==='UL'){const lh=parseFloat(el.style.lineHeight)||0,sz=ptOf(el.style.fontSize),dash=el.classList.contains('dash');
       const kp=!!el.dataset.keep,nli=el.children.length;
-      [...el.children].forEach((li,i)=>x+=para(li,{keep:kp&&i<nli-1,noInd:1,left:18+ptOf(el.style.marginLeft),hang:360,after:0,sz,line:lh&&lh<5?Math.round(lh*240):0,prefix:`<w:r><w:t>${el.tagName==='OL'?(el.type==='a'?'abcdefghijklmnop'[i]:i+1)+'.':dash?'-':'•'}</w:t></w:r><w:r><w:tab/></w:r>`}))}
+      [...el.children].forEach((li,i)=>x+=para(li,{keep:kp&&i<nli-1,utuh:1,noInd:1,left:18+ptOf(el.style.marginLeft),hang:360,after:0,sz,line:lh&&lh<5?Math.round(lh*240):0,prefix:`<w:r><w:t>${el.tagName==='OL'?(el.type==='a'?'abcdefghijklmnop'[i]:i+1)+'.':dash?'-':'•'}</w:t></w:r><w:r><w:tab/></w:r>`}))}
     else if(el.tagName==='BR')x+=spacer(12)}
   return x}
 async function buatDocx(keys){
@@ -1141,7 +1156,7 @@ async function buatGDoc(key,keys,judul,btn,ulang){
   try{const blob=await buatDocx(keys);const b64=await new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.readAsDataURL(blob)});
     let r,err;for(let i=0;i<3&&!r;i++){try{r=await api('apiBuatDokumen',cur.id,key,judul,b64)}catch(e){err=e;if(/SESI|Sesi berakhir/.test(e.message||''))break;btn.textContent='Mencoba lagi ('+(i+2)+'/3)…';await new Promise(k=>setTimeout(k,1500*(i+1)))}}
     if(!r)throw err||new Error('tidak diketahui');
-    cur.dokumen=cur.dokumen||{};cur.dokumen[key]=r.dok;cur.folderUrl=r.folderUrl;cur._versi=r.versi;
+    cur.dokumen=cur.dokumen||{};cur.dokumen[key]=r.dok;cur.folderUrl=r.folderUrl;if(r.folderId)cur.folderId=r.folderId;cur._versi=r.versi;
     if(w)w.location=r.dok.url;toast(r.cadangan?'Google Docs sedang bermasalah — dokumen disimpan sebagai file Word di folder Drive':'Google Doc dibuat');renderMain()}
   catch(e){if(w)w.close();btn.disabled=false;btn.textContent='📄 Buat Google Doc';
     if(confirm('Gagal membuat Google Doc: '+(e.message||e)+'\n\nUnduh sebagai file Word (.docx) saja supaya pekerjaan tidak tertunda?'))dl(keys,judul)}}
@@ -1335,7 +1350,9 @@ function exportCsv(){const H=['Jenis','Nama','NIK','Jenis_Kelamin','Tanggal_Lahi
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+t],{type:'text/csv'}));a.download='data-penyumpahan.csv';a.click()}
 
 /* ---------------- baca PDF penetapan ---------------- */
-const loadJs=src=>new Promise((ok,no)=>{if(document.querySelector(`script[src="${src}"]`))return ok();const e=document.createElement('script');e.src=src;e.onload=ok;e.onerror=()=>no(new Error('Gagal memuat '+src));document.head.appendChild(e)});
+/* pustaka dimuat sekali; pemanggilan bersamaan menunggu janji yang sama (bukan langsung lanjut sebelum skrip selesai dimuat) */
+const JS_MUAT={};
+const loadJs=src=>JS_MUAT[src]||(JS_MUAT[src]=new Promise((ok,no)=>{const e=document.createElement('script');e.src=src;e.onload=()=>ok();e.onerror=()=>{delete JS_MUAT[src];e.remove();no(new Error('Gagal memuat '+src))};document.head.appendChild(e)}));
 const PDFJS='https:\/\/cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const TESS='https:\/\/cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
 let penFill=false;
