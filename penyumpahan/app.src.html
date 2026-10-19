@@ -256,6 +256,7 @@ const DEF_SET={
   telp:'Telepon: (061) 451 7830, Faksimile: (061) 451 4328',
   web:'Laman: www.bhpmedan.kemenkum.go.id, Pos-el: bhp.medan@kemenkum.go.id',
   kepala:'Syafriadi Lubis',wa:'0851-2156-2136',
+  dasarPnbp:'Peraturan Pemerintah Republik Indonesia Nomor 30 Tahun 2026 tentang Jenis dan Tarif atas Jenis Penerimaan Negara Bukan Pajak yang Berlaku pada Kementerian Hukum',
   kanwilTembusan:'Kepala Kantor Wilayah Kementerian Hukum Sumatera Utara',
   pejabat:[{nama:'SYUHADA',nip:'196706121989031001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'DARTIMNOV M.T HARAHAP',nip:'197311272002121001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'MARIANI BR MARBUN',nip:'197604222003122001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'TUMIAR SIMANJORANG',nip:'197306111993032001',jabatan:'Kurator Keperdataan Ahli Madya'},{nama:'NANANG SURYA PURNAMA',nip:'198106282000031001',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'TITIN WAHYUNASARI DONGORAN',nip:'198001172010012010',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'SITI ROSLINA',nip:'196801141987032001',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'JOKO PRABOWO',nip:'199101242019011001',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'DIAN STEVANY TONGLI',nip:'199209232019012001',jabatan:'Kurator Keperdataan Ahli Muda'},{nama:'BUDIYANTO',nip:'197312212001121001',jabatan:'Kepala Seksi Harta Peninggalan Wilayah I'},{nama:'ELSINTHA DAMAYANTI',nip:'197105051992032001',jabatan:'Kepala Seksi Harta Peninggalan Wilayah II'},{nama:'LUSIANA TARIHORAN',nip:'197304101998032001',jabatan:'Kepala Seksi Harta Peninggalan Wilayah III'}],
   lafaz:{
@@ -387,7 +388,9 @@ const jadwal=(r,note)=>`<table style="margin:0 0 10pt 36pt"><tr><td style="width
 <tr><td>Pukul</td><td>:</td><td>${V(r.waktu)}<br>(${note} ${WA()})</td></tr><tr><td>Tempat</td><td>:</td><td>${esc(r.tempat||'Kediaman '+(r.nama||''))}</td></tr></table>`;
 const yth=(nama,alamat)=>`<p class="ni" style="text-align:left">Yth. <b>${nama}</b><br>di</p><p class="ni" style="margin-left:18pt;max-width:260pt;text-align:left">${alamat}</p><br>`;
 const syarat=(items,after)=>`<ol style="margin-left:36pt;line-height:1.15">${items.map(x=>`<li>${x}</li>`).join('')}</ol>${after.map(x=>`<p class="ni" style="margin-left:54pt;line-height:1.15">${x}</p>`).join('')}`;
-const PNBP='Nominal PNBP ditetapkan secara resmi berdasarkan Peraturan Pemerintah Republik Indonesia Nomor 45 Tahun 2024 tentang Jenis dan Tarif atas Jenis Penerimaan Negara Bukan Pajak yang Berlaku pada Kementerian Hukum dan Hak Asasi Manusia.';
+/* dasar hukum PNBP: PP 30/2026 (berlaku 1 Agustus 2026, menggantikan PP 45/2024); bisa diubah di Pengaturan bila ada peraturan baru */
+const PNBP_LAMA=/Nomor 45 Tahun 2024|Hak Asasi Manusia/i;
+const pnbpTxt=()=>'Nominal PNBP ditetapkan secara resmi berdasarkan '+esc(SET.dasarPnbp&&!PNBP_LAMA.test(SET.dasarPnbp)?SET.dasarPnbp:DEF_SET.dasarPnbp).replace(/\.\s*$/,'')+'.';
 const BILLING='(Mekanisme pembayaran akan dipandu melalui kode pembayaran/<i>billing</i> kas negara secara elektronik pada saat kegiatan).';
 
 const tabelJadwal=r=>`<table style="margin:0 0 10pt 36pt"><tr><td style="width:100pt">Hari / Tanggal</td><td>:</td><td>${hari(r.tglSumpah)}, ${tgl(r.tglSumpah)}</td></tr>
@@ -403,7 +406,7 @@ const DOCS_EXTRA={
       `Membawa 2 (dua) orang saksi yang merupakan rekan / keluarga yang mengenal ${d.J} dan ${d.pihak};`,
       'Membawa meterai senilai Rp 10.000,- (Sepuluh Ribu Rupiah) sebanyak 4 (empat) lembar;',
       `Melakukan pembayaran Penerimaan Negara Bukan Pajak (PNBP) sebesar Rp 200.000,- (Dua Ratus Ribu Rupiah) untuk layanan Berita Acara Penyumpahan ${d.jenisTxt};`,
-      'Mengenakan pakaian formal, rapi, dan sopan.'],[PNBP,BILLING])+
+      'Mengenakan pakaian formal, rapi, dan sopan.'],[pnbpTxt(),BILLING])+
 `<p style="margin-top:10pt">Demikian surat undangan ini kami sampaikan. Untuk informasi lebih lanjut, ${s} dapat menghubungi WhatsApp Layanan Perwalian Pengampuan di nomor ${WA()}. Atas perhatian dan kehadiran ${s}, kami mengucapkan terima kasih.</p>`+ttdKepala()+tembusan(r,false)}}};
 const DOCS={
   permohonan:{nama:r=>'Surat Permohonan Penyumpahan',sty:{font:'Times New Roman',line:360,tline:360},fn:r=>{const d=derive(r);return `<p class="ni" style="text-align:right;margin-top:0">${tempatTgl(r)}</p>
@@ -426,7 +429,7 @@ const DOCS={
     jadwal(r,'Mohon sampaikan kesediaan waktu dengan menghubungi Whatsapp Layanan Perwalian Pengampuan di nomor')+
 `<p>Guna kelengkapan administrasi Berita Acara Penyumpahan dan Pencatatan Harta sesuai ketentuan peraturan perundang-undangan, kami memohon kesediaan ${s} untuk mempersiapkan dokumen pendukung pada saat kegiatan untuk dipindai oleh petugas sebagai dokumen pendukung arsip, yang meliputi:</p>`+
     syarat(['Kartu Tanda Penduduk (KTP) Wali dan Anak;','Kartu Keluarga (KK);','Akta Kelahiran Anak;','Dokumen Kepemilikan Aset / Harta Kekayaan Yang Menjadi Hak Anak;','Kartu Tanda Penduduk (KTP) 2 (dua) orang saksi dari pihak Kepala Lingkungan dan/atau Keluarga;',
-      'Biaya Penerimaan Negara Bukan Pajak (PNBP) sebesar Rp 200.000,- (Dua Ratus Ribu Rupiah) untuk layanan Berita Acara Penyumpahan Perwalian dan Biaya 4 (empat) lembar Meterai senilai Rp 40.000,- (Empat Puluh Ribu Rupiah).'],[PNBP,BILLING])+
+      'Biaya Penerimaan Negara Bukan Pajak (PNBP) sebesar Rp 200.000,- (Dua Ratus Ribu Rupiah) untuk layanan Berita Acara Penyumpahan Perwalian dan Biaya 4 (empat) lembar Meterai senilai Rp 40.000,- (Empat Puluh Ribu Rupiah).'],[pnbpTxt(),BILLING])+
 `<p style="margin-top:10pt">Demikian surat pemberitahuan ini kami sampaikan. Untuk informasi lebih lanjut, ${s} dapat menghubungi <i>Contact Person</i> (WhatsApp) Layanan Perwalian di nomor: ${WA()}. Atas perhatian dan kesediaan ${s}, kami ucapkan terima kasih.</p>`+ttdKepala()+tembusan(r);
     return kop()+head(r.nomorSurat,'Pengambilan Sumpah Pengampu<br>Dan Inventarisasi Harta',r)+yth(`${s} ${V(r.nama)}`,V(r.alamat))+
 `<p>${penetapan(r)}, ${s} telah ditunjuk secara resmi sebagai Pengampu atas <b>${V(d.objek)}</b> (selanjutnya disebut sebagai "Terampu").</p>
@@ -436,7 +439,7 @@ const DOCS={
     jadwal(r,'Untuk konfirmasi waktu pelaksanaan sumpah, mohon untuk menghubungi Whatsapp Layanan Perwalian Pengampuan di nomor')+
 `<p>Guna kelengkapan administrasi Berita Acara Penyumpahan dan Pencatatan Harta sesuai ketentuan peraturan perundang-undangan, kami memohon kesediaan ${s} untuk mempersiapkan dokumen pendukung pada saat kegiatan, yang meliputi:</p>`+
     syarat(['Fotokopi Kartu Tanda Penduduk (KTP) Pengampu dan Terampu;','Fotokopi Kartu Keluarga (KK);','Fotokopi Akta Kelahiran Terampu;','Fotokopi Surat Keterangan Kondisi Medis Terampu;','Fotokopi Dokumen Kepemilikan Aset / Harta Kekayaan Terampu;','Fotokopi Kartu Tanda Penduduk (KTP) 2 (dua) orang saksi dari pihak Kepala Lingkungan dan/atau Keluarga;','Meterai senilai Rp 10.000,- (Sepuluh Ribu Rupiah) sebanyak 4 (empat) lembar;',
-      'Biaya Penerimaan Negara Bukan Pajak (PNBP) sebesar Rp 200.000,- (Dua Ratus Ribu Rupiah) untuk layanan Berita Acara Penyumpahan Pengampuan dan biaya sebesar Rp 40.000,- (Empat Puluh Ribu Rupiah) untuk 4 (empat) lembar meterai Rp 10.000,-'],[PNBP,`<i>${BILLING}</i>`])+
+      'Biaya Penerimaan Negara Bukan Pajak (PNBP) sebesar Rp 200.000,- (Dua Ratus Ribu Rupiah) untuk layanan Berita Acara Penyumpahan Pengampuan dan biaya sebesar Rp 40.000,- (Empat Puluh Ribu Rupiah) untuk 4 (empat) lembar meterai Rp 10.000,-'],[pnbpTxt(),`<i>${BILLING}</i>`])+
 `<p style="margin-top:10pt">Demikian surat pemberitahuan ini kami sampaikan. Atas perhatian dan kesediaan ${s}, kami ucapkan terima kasih.</p>`+ttdKepala()+tembusan(r)}},
 
   lurah:{nama:()=>'Surat Antar ke Lurah',sty:{line:360},fn:r=>{const d=derive(r),J=d.J;
@@ -1454,7 +1457,7 @@ function wizard(step){WZ.on=true;$('.wrap').classList.add('wzmode');WZ.step=step
 }
 
 /* ---------------- pengaturan (admin utama) ---------------- */
-function openSet(){if(!isSuper())return;const s=SET;const L={instansi:'Instansi',kanwil:'Kantor wilayah',balai:'Nama balai',alamat:'Alamat',telp:'Telepon',web:'Laman & pos-el',kepala:'Nama Kepala',wa:'Nomor WA layanan',kanwilTembusan:'Tembusan kanwil'};
+function openSet(){if(!isSuper())return;const s=SET;const L={instansi:'Instansi',kanwil:'Kantor wilayah',balai:'Nama balai',alamat:'Alamat',telp:'Telepon',web:'Laman & pos-el',kepala:'Nama Kepala',wa:'Nomor WA layanan',kanwilTembusan:'Tembusan kanwil',dasarPnbp:'Dasar hukum PNBP (dikutip di surat antar & undangan)'};
   dlg(`<h3>⚙ Pengaturan <span class="tag">Admin Utama</span></h3><div class="grid">
   ${Object.keys(L).map(k=>`<div><label>${L[k]}</label><input value="${esc(s[k])}" oninput="SET['${k}']=this.value"></div>`).join('')}
   <div class="full"><label>Logo kop</label><div style="display:flex;gap:10px;align-items:center"><img src="${s.logo||LOGO_DEF}" style="height:48px"><label class="btn" style="margin:0;color:var(--ink)">Ganti logo<input type="file" accept="image/*" hidden onchange="gantiLogo(this)"></label>${s.logo?'<button onclick="delete SET.logo;openSet()">Pakai logo bawaan</button>':''}</div></div>
