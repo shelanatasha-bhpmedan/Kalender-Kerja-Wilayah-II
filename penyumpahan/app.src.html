@@ -434,16 +434,25 @@ const DOCS_EXTRA={
       `Biaya Penerimaan Negara Bukan Pajak (PNBP) sebesar Rp 200.000,- (Dua Ratus Ribu Rupiah) untuk layanan Berita Acara Penyumpahan ${d.jenisTxt}. Nominal ini ditetapkan secara resmi berdasarkan ${esc(dasarPnbp())}. ${BILLING}`],[])+
 `<p style="margin-top:10pt">Demikian surat pemberitahuan ini kami sampaikan. Untuk informasi lebih lanjut, ${s} dapat menghubungi <i>Contact Person</i> (WhatsApp) Layanan Perwalian dan Pengampuan di nomor: ${WA()}. Atas perhatian dan kesediaan ${s}, kami ucapkan terima kasih.</p>`+ttdKepala()+tembusan(r,!!String(r.kelurahan||'').trim(),true)}}};
 const DOCS={
-  permohonan:{nama:r=>'Surat Permohonan Penyumpahan',sty:{font:'Times New Roman',line:360,tline:360},fn:r=>{const d=derive(r);return `<p class="ni" style="text-align:right;margin-top:0">${tempatTgl(r)}</p>
-<p class="ni" style="margin-top:14pt"><b>Kepada Yth;</b><br>Kepala Balai Harta Peninggalan Medan<br>Jl. Listrik No. 10 Medan</p>
-<table style="margin-top:6pt;margin-bottom:12pt"><tr><td style="width:52pt">Perihal</td><td>:</td><td>Permohonan Penyumpahan ${d.w?'Wali<br>Anak Di Bawah Umur':'Pengampu'}</td></tr></table>
-<p class="ni" style="margin-top:6pt">Dengan hormat,<br>Saya yang bertanda tangan di bawah ini :</p>
-<table style="margin:8pt 0 12pt 12pt"><tr><td style="width:100pt">Nama</td><td>:</td><td>${V(r.nama)}</td></tr><tr><td>Usia</td><td>:</td><td>${usia(r.tglLahir,r.tglSumpah)}</td></tr>
-<tr><td>Pekerjaan</td><td>:</td><td>${V(r.pekerjaan)}</td></tr><tr><td>Alamat</td><td>:</td><td>${V(r.alamat)}</td></tr><tr><td>No. KTP</td><td>:</td><td>${V(r.nik)}</td></tr><tr><td>No. HP</td><td>:</td><td>${esc(r.hp||'')}</td></tr></table>
-<p class="ni" style="margin-top:6pt">${d.w?'Dengan ini memohon kepada Kepala Balai Harta Peninggalan Medan agar melakukan penyumpahan terhadap WALI atas anak di bawah umur. Bersama ini saya lampirkan surat-surat yang diperlukan untuk melengkapi syarat-syarat penyumpahan wali.'
-  :'Dengan ini mengajukan permohonan kepada Kepala Balai Harta Peninggalan Medan agar melakukan penyumpahan atas nama tersebut di atas sebagai Pengampu terhadap Terampu. Bersama ini saya lampirkan surat-surat yang diperlukan untuk melengkapi syarat-syarat penyumpahan pengampu.'}</p>
-<p class="ni" style="margin-top:12pt">Demikian diajukan permohonan ini, dan atas perhatiannya, diucapkan terima kasih.</p>
-<p class="ni" style="margin-left:262pt;margin-top:24pt;text-align:left">Pemohon,<br><br><span style="font-size:7pt">Materai<br>10000</span><br><br>${V(r.nama)}</p>`}},
+  permohonan:{nama:r=>'Surat Permohonan Penyumpahan',sty:{font:'Times New Roman',line:300,tline:300},fn:r=>{const d=derive(r);
+    /* format surat permohonan penyumpahan di kantor BHP (contoh: permohonan Limba Sulinto Ernawati) */
+    const tc=x=>esc(String(x||'').toLowerCase().replace(/(^|[\s(.'-])(\p{L})/gu,(m,a,c)=>a+c.toUpperCase()).replace(/\b(Bin|Binti|Br)\b/g,m=>m.toLowerCase()));
+    const lbl=d.w?'Anak':'Terampu',t=r.terampu||{},sap=d.w?'':(t.jk==='Perempuan'?'Ibu ':t.jk==='Laki-laki'?'Bapak ':'');
+    const objekNm=d.w?(d.anak.map(a=>tc(a.nama)).filter(Boolean).join(', ')||V('')):(t.nama?sap+tc(t.nama):V(''));
+    const peran=peranPemohon(r.status,r.jk,d.w),hub=peran?peran.replace(/\b\w/g,c=>c.toUpperCase()):'';
+    const pg=String(r.pengadilan||''),jp=(pg.match(/^(Pengadilan\s+(?:Negeri|Agama)|Mahkamah\s+Syar'?iyah)/i)||[])[1]||'Pengadilan',kotaPg=pg.replace(/^(Pengadilan\s+(?:Negeri|Agama)|Mahkamah\s+Syar'?iyah)\s*/i,'').replace(/\s*Kelas\b.*$/i,'')||pg;
+    const tbl=rows=>`<table style="margin:6pt 0 10pt 22pt">${rows.map(([k,v])=>`<tr><td style="width:150pt">${k}</td><td>:</td><td>${v}</td></tr>`).join('')}</table>`;
+    const tglSurat=r.tglPermohonan?`${esc(kota(r))}, ${tgl(r.tglPermohonan)}`:tempatTgl(r);
+    return `<p class="ni" style="text-align:right;margin-top:0">${tglSurat}</p>
+<p class="ni" style="margin-top:12pt;text-align:left"><b>Kepada Yth.</b><br>Kepala Balai Harta Peninggalan Medan<br>Jl. Listrik No. 10 Medan</p>
+<table style="margin-top:10pt;margin-bottom:10pt"><tr><td style="width:62pt">Perihal</td><td>:</td><td><b>Permohonan Penyumpahan ${d.J}</b><br>atas nama ${lbl} ${objekNm}.</td></tr></table>
+<p class="ni">Dengan hormat,</p><p class="ni" style="margin-top:6pt">Saya yang bertanda tangan di bawah ini:</p>
+${tbl([['Nama',tc(r.nama)||V('')],['Tempat/Tgl. Lahir',(r.tempatLahir?tc(r.tempatLahir)+', ':'')+(r.tglLahir?tgl(r.tglLahir):V(''))],['Pekerjaan',tc(r.pekerjaan)||V('')],['Alamat',esc(alamatLengkap(r)||r.alamat||'')||V('')],['NIK (No. KTP)',V(r.nik)],['No. HP/WA',esc(r.hp||'')],[`Hubungan dengan ${lbl}`,esc(hub)]])}
+<p style="text-indent:0">Dengan ini memohon kepada Kepala Balai Harta Peninggalan Medan dan/atau pejabat yang berwenang agar berkenan melakukan penyumpahan terhadap diri saya selaku <b>${d.J}</b>, yang telah ditunjuk berdasarkan penetapan pengadilan sebagai berikut:</p>
+${tbl([[esc(jp.replace(/\s+/g,' ')),esc(kotaPg)],['Nomor Penetapan',V(r.nomorPenetapan)],['Tanggal Penetapan',r.tglPenetapan?tgl(r.tglPenetapan):V('')],[`Nama ${lbl}`,objekNm]])}
+<p style="text-indent:0">Bersama ini saya lampirkan surat-surat yang diperlukan yang telah dilegalisir oleh pejabat yang berwenang.</p>
+<p style="text-indent:0;margin-top:8pt">Demikian permohonan ini saya ajukan. Atas perhatian Bapak/Ibu, saya ucapkan terima kasih.</p>
+<p class="ni" style="margin-left:262pt;margin-top:16pt;text-align:left">Pemohon,<br><br><span style="font-size:7pt">Materai<br>10000</span><br><br>(${tc(r.nama)||V('')})</p>`}},
 
   surat:{nama:r=>`Surat Antar ke ${derive(r).J}`,sty:{line:360},fn:r=>{const d=derive(r),s=d.sapa;
     if(d.w)return kop()+head(r.nomorSurat,'Pengambilan Sumpah Wali<br>Dan Inventarisasi Harta',r)+yth(`${s} ${V(r.nama)}`,V(r.alamat))+
@@ -685,7 +694,7 @@ function newId(){return Date.now().toString(36)+Math.random().toString(36).slice
 function addRec(r,asal){r.id=r.id||newId();r.asal=asal;r._meta={dibuatOleh:ME.nama,dibuatPada:new Date().toISOString(),diubahOleh:ME.nama,diubahPada:new Date().toISOString()};DB.unshift(r);return r}
 
 /* ---------------- riwayat ---------------- */
-const LBL={tglPermohonan:'Tanggal surat permohonan',jenis:'Jenis perkara',tanggalSurat:'Tanggal surat',nomorSurat:'Nomor surat ke pengampu/wali',nomorLurah:'Nomor surat lurah',nomorBAP:'Nomor BAP',nomorBA:'Nomor BA sumpah',isiBap:'Isi BAP',hp:'No. HP',alamatKelurahan:'Alamat kelurahan',kotaPermohonan:'Kota permohonan',kanwilTembusan:'Tembusan kanwil',bapOleh:'Pejabat BAP',hartaTetap:'Barang tetap',hartaTunai:'Uang/tabungan',hartaEmas:'Emas/perak',hartaSurat:'Surat berharga',hartaPerabot:'Perabot/dagang/ternak',hartaBergerak:'Barang bergerak',hartaHutang:'Hutang',nomorBAHarta:'Nomor BA harta',
+const LBL={tglPermohonan:'Tanggal surat permohonan',tempatLahir:'Tempat lahir',jenis:'Jenis perkara',tanggalSurat:'Tanggal surat',nomorSurat:'Nomor surat ke pengampu/wali',nomorLurah:'Nomor surat lurah',nomorBAP:'Nomor BAP',nomorBA:'Nomor BA sumpah',isiBap:'Isi BAP',hp:'No. HP',alamatKelurahan:'Alamat kelurahan',kotaPermohonan:'Kota permohonan',kanwilTembusan:'Tembusan kanwil',bapOleh:'Pejabat BAP',hartaTetap:'Barang tetap',hartaTunai:'Uang/tabungan',hartaEmas:'Emas/perak',hartaSurat:'Surat berharga',hartaPerabot:'Perabot/dagang/ternak',hartaBergerak:'Barang bergerak',hartaHutang:'Hutang',nomorBAHarta:'Nomor BA harta',
   nama:'Nama pengampu/wali',nik:'NIK',jk:'Jenis kelamin',tglLahir:'Tanggal lahir',agama:'Agama',pekerjaan:'Pekerjaan',alamat:'Alamat',kelurahan:'Kelurahan/Kec/Kota',status:'Hubungan',
   'terampu.nama':'Nama terampu','terampu.jk':'JK terampu','terampu.tglLahir':'Tgl lahir terampu','terampu.kondisi':'Kondisi medis',pengadilan:'Pengadilan',nomorPenetapan:'Nomor penetapan',tglPenetapan:'Tanggal penetapan',
   tglSumpah:'Tanggal sumpah',waktu:'Waktu',tempat:'Tempat',madya:'Pejabat penyumpah',muda:'Pejabat inventarisasi',harta:'Harta lainnya',tanah:'Tanah/bangunan',rekening:'Rekening',saksi1:'Saksi 1',saksi2:'Saksi 2'};
@@ -990,7 +999,7 @@ function renderMain(){
   const pjOpt=v=>{const c=pjCari(v).nama;return SET.pejabat.map(p=>`<option ${p.nama===c?'selected':''} value="${esc(p.nama)}">${esc(p.nama||'(isi di Pengaturan)')} — ${esc(p.jabatan||'')}</option>`).join('')};
   if(tab==='umum')h+=`<div class="full"><label class="btn" style="display:inline-block;margin:0;color:var(--ink)">📑 Isi otomatis dari PDF Penetapan<input type="file" accept=".pdf,image/*" hidden onchange="uploadPenetapan(this,true)"></label></div>`+F('pengadilan','Pengadilan')+FX('provinsi','Provinsi','select',['',...PROV.map(x=>x[0]),'Lainnya'],cur.provinsi||'',' title="Kosongkan agar ditebak otomatis dari pengadilan/alamat"').replace('<option selected></option>','<option value="" selected>Otomatis: '+esc(provinsi({...cur,provinsi:''}))+'</option>').replace('<option ></option>','<option value="">Otomatis: '+esc(provinsi({...cur,provinsi:''}))+'</option>')+F('nomorPenetapan','Nomor Penetapan')+F('sippDomain',`Alamat SIPP (kosong = otomatis: ${esc(sippDom(cur)||'-')})`)+F('tglPenetapan','Tanggal Penetapan','date')+F('tanggalSurat','Tanggal Surat','date')+
     F('nomorSurat',`Nomor Surat ke ${d.J} (otomatis dari SPS)`)+F('nomorLurah','Nomor Surat ke Lurah (otomatis dari SPS)')+F('nomorBAP','Nomor BAP (diisi petugas di hari H; kosong = awalan saja)')+F('nomorBA','Nomor BA Sumpah (diisi petugas di hari H)')+F('nomorBAHarta','Nomor BA Inventarisasi (diisi petugas di hari H)');
-  if(tab==='pihak')h+=F('nama',`Nama ${d.J}`)+F('nik','NIK')+F('jk','Jenis Kelamin','select',['Laki-laki','Perempuan'])+F('tglLahir','Tanggal Lahir','date')+
+  if(tab==='pihak')h+=F('nama',`Nama ${d.J}`)+F('nik','NIK')+F('jk','Jenis Kelamin','select',['Laki-laki','Perempuan'])+F('tempatLahir','Tempat Lahir')+F('tglLahir','Tanggal Lahir','date')+
     `<div><label>Usia (otomatis)</label><input disabled value="${usia(cur.tglLahir,cur.tglSumpah)}"></div>`+F('agama','Agama','select',Object.keys(SET.lafaz))+F('pekerjaan','Pekerjaan')+
     F('status',`Hubungan: ${d.pihak} adalah … pemohon (mis. Adik Kandung, Ibu Kandung, Anak Kandung)`)+F('hp','No. HP (surat permohonan)')+F('alamat','Alamat lengkap','area')+
     `<div class="full"><label>Kelurahan, Kecamatan, Kota (terisi otomatis dari alamat)</label><input data-kel value="${esc(cur.kelurahan)}" oninput="setv('kelurahan',this.value)"></div>`+F('alamatKelurahan','Nama kantor lurah/kepala desa + alamat (surat lurah)').replace(/^<div data-f="alamatKelurahan"(?: class="([^"]*)")?/,(m,c)=>`<div data-f="alamatKelurahan" class="full ${c||''}"`)+`<div class="full lurah-box" id="lurahBox">${lurahBoxHtml()}</div>`+F('kotaPermohonan',`Kota di surat permohonan/pernyataan (kosong = ${kota(cur)})`);
@@ -1514,7 +1523,7 @@ function gabung(ai,rx){const o={...rx,...ai};for(const k in rx)if(typeof rx[k]!=
 function normAI(d){if(Array.isArray(d))d=d[0]||{};d=d||{};
   const src=d.pemohon||d.wali||d.pengampu;if(src&&typeof src==='object'){for(const k in src)if(!d[k]&&src[k])d[k]=src[k];
     if(!d.nama)d.nama=src.nama||src.name||''}
-  for(const k of ['nama','nik','jk','tglLahir','agama','pekerjaan','alamat','kelurahan','status','pengadilan','nomorPenetapan','tglPenetapan'])if(d[k]!=null&&typeof d[k]!=='string')d[k]=String(d[k]);
+  for(const k of ['nama','nik','jk','tempatLahir','tglLahir','agama','pekerjaan','alamat','kelurahan','status','pengadilan','nomorPenetapan','tglPenetapan'])if(d[k]!=null&&typeof d[k]!=='string')d[k]=String(d[k]);
   if(d.nama)d.nama=d.nama.toUpperCase();if(/^(laki|pria)/i.test(d.jk||''))d.jk='Laki-laki';else if(/^(perem|wanita)/i.test(d.jk||''))d.jk='Perempuan';
   if(d.jenis&&!/^(Pengampuan|Perwalian)$/.test(d.jenis))d.jenis=/wali/i.test(d.jenis)?'Perwalian':'Pengampuan';return d}
 async function aiExtract(file,teks){
@@ -1524,7 +1533,7 @@ Data WALI/PENGAMPU = PEMOHON (identitas di halaman pertama setelah "diajukan ole
 ATURAN KETAT: hanya isi data yang benar-benar tertulis di dokumen; bila tidak ada, isi string kosong. Jangan mengarang atau menebak. Semua tanggal format YYYY-MM-DD. Nama orang HURUF KAPITAL tanpa gelar sapaan.
 Balas satu objek JSON dengan kunci:
 {"jenis":"Perwalian|Pengampuan","pengadilan":"mis. Pengadilan Agama Lubuk Pakam","nomorPenetapan":"","tglPenetapan":"YYYY-MM-DD (tanggal 'Demikianlah ditetapkan')",
-"nama":"","nik":"16 digit","jk":"Laki-laki|Perempuan","tglLahir":"","agama":"Islam|Kristen|Katholik|Hindu|Buddha|Khonghucu","pekerjaan":"","alamat":"alamat lengkap pemohon seperti tertulis","kelurahan":"Kelurahan X, Kecamatan Y, Kota/Kabupaten Z",
+"nama":"","nik":"16 digit","tempatLahir":"kota/kabupaten tempat lahir pemohon","jk":"Laki-laki|Perempuan","tglLahir":"","agama":"Islam|Kristen|Katholik|Hindu|Buddha|Khonghucu","pekerjaan":"","alamat":"alamat lengkap pemohon seperti tertulis","kelurahan":"Kelurahan X, Kecamatan Y, Kota/Kabupaten Z",
 "status":"hubungan TERAMPU (pengampuan) atau ANAK (perwalian) TERHADAP PEMOHON = terampu/anak itu SIAPANYA pemohon, Title Case (mis. Adik Kandung, Ibu Kandung, Anak Kandung, Cucu, Keponakan, Suami)",
 "pasangan":"nama suami/istri pemohon (untuk perwalian: orang tua lain dari anak)","aktaNikah":"mis. Kutipan Akta Nikah Nomor 123/45/VI/2008 tanggal 12 Juni 2008 dari KUA Kecamatan …","tglMeninggalPasangan":"","ketMeninggal":"mis. berdasarkan Akta Kematian Nomor … tanggal … yang dikeluarkan oleh …",
 "anak":[{"nama":"","jk":"Laki-laki|Perempuan","tglLahir":"","diwalikan":true}],
@@ -1541,7 +1550,7 @@ KEAMANAN FORMAT JSON (WAJIB): di dalam nilai teks JANGAN memakai tanda petik gan
 NAMA DISAMARKAN: bila nama orang di penetapan disamarkan/dianonimkan (mis. "ANAK I", "Pemohon", "P***", "XXX", inisial "A.B."), isi "nama" dengan "" (string kosong) — JANGAN menyalin samarannya; data lain (jk, tanggal lahir, dll.) tetap diisi. Nama asli akan dicari aplikasi di SIPP.`;
   const d=teks?await api('apiAnalisaTeks',teks,prompt,4000):await api('apiBacaPenetapanAI',b64,file.type||'application/pdf',await promptBersih(file,prompt));if(!d)throw new Error('AI Claude belum aktif');const n=normAI(d);n._ai=true;return n}
 
-const PEN_LBL={jenis:'Jenis',pengadilan:'Pengadilan',nomorPenetapan:'Nomor Penetapan',tglPenetapan:'Tanggal Penetapan',nama:'Nama Pemohon (Wali/Pengampu)',nik:'NIK',jk:'Jenis Kelamin',tglLahir:'Tanggal Lahir',agama:'Agama',pekerjaan:'Pekerjaan',alamat:'Alamat',kelurahan:'Kelurahan/Kec/Kota',status:'Hubungan (terampu/anak adalah … pemohon)'};
+const PEN_LBL={tempatLahir:'Tempat Lahir',jenis:'Jenis',pengadilan:'Pengadilan',nomorPenetapan:'Nomor Penetapan',tglPenetapan:'Tanggal Penetapan',nama:'Nama Pemohon (Wali/Pengampu)',nik:'NIK',jk:'Jenis Kelamin',tglLahir:'Tanggal Lahir',agama:'Agama',pekerjaan:'Pekerjaan',alamat:'Alamat',kelurahan:'Kelurahan/Kec/Kota',status:'Hubungan (terampu/anak adalah … pemohon)'};
 let PEN=null;
 function reviewHtml(d){PEN=d;const w=d.jenis==='Perwalian';const cekT=(d._cek||[]).length?`<div style="border:1.5px solid #f6c343;background:#fff6db;color:#6b4e00;border-radius:12px;padding:10px 14px;margin:0 0 10px"><b>🔎 Cek silang dengan teks penetapan</b><ul style="margin:6px 0 0;padding-left:18px">${d._cek.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:(d._ai&&d._text?`<p class="hint" style="color:#0b6b48">✅ Nama & tanggal hasil AI cocok dengan teks penetapan${d._detik?` · selesai ${d._detik} detik`:''}</p>`:'');
   const row=(k,lbl,v,type='text')=>`<div><label>${lbl}</label><input type="${type}" value="${esc(v||'')}" data-pk="${k}" style="${v?'':'background:#fff6db;border-color:#f6c343'}"></div>`;
@@ -1565,7 +1574,7 @@ function applyPenetapan(root,next){
   (root||$('#penBody')).querySelectorAll('[data-pk]').forEach(e=>{const ks=e.dataset.pk.split('.');let o=PEN;ks.slice(0,-1).forEach((k,i)=>{o[k]=o[k]??(/^\d+$/.test(ks[i+1])?[]:{});o=o[k]});o[ks.at(-1)]=e.value.trim()});
   {const k=cekKelayakan(penRec(PEN));if(k.tolak.length&&!PEN._paksa){toast('⛔ Penetapan ditolak otomatis: '+k.tolak.join(' '));api('apiCatat','TOLAK_PENETAPAN','',PEN.nama||'',(PEN.nomorPenetapan||'')+' — '+k.tolak.join(' ')).catch(()=>{});return}}
   let r=(penFill&&cur&&!cur._dihapus)?cur:null;const baru=!r;if(!r)r=addRec(blank(),'Dibuat dari upload penetapan '+(PEN.nomorPenetapan||''));
-  ['jenis','pengadilan','nomorPenetapan','tglPenetapan','nama','nik','jk','tglLahir','agama','pekerjaan','alamat','kelurahan','status','pasangan','aktaNikah','tglMeninggalPasangan','ketMeninggal','alasan','terkaitMiliter'].forEach(k=>{if(PEN[k])r[k]=typeof PEN[k]==='string'?PEN[k]:String(PEN[k])});
+  ['jenis','pengadilan','nomorPenetapan','tglPenetapan','nama','nik','jk','tempatLahir','tglLahir','agama','pekerjaan','alamat','kelurahan','status','pasangan','aktaNikah','tglMeninggalPasangan','ketMeninggal','alasan','terkaitMiliter'].forEach(k=>{if(PEN[k])r[k]=typeof PEN[k]==='string'?PEN[k]:String(PEN[k])});
   if(samar(r.nama))r.nama='';
   if(typeof PEN.orangTuaHidup==='boolean')r.orangTuaHidup=PEN.orangTuaHidup;terapkanTambahan(PEN,r);if(typeof PEN.isiBap==='string'&&PEN.isiBap.trim())r.isiBap=PEN.isiBap;
   if(PEN.kelurahan)r._kelManual=true;
