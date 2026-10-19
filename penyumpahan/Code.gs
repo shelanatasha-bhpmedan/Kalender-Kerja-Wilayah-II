@@ -249,19 +249,23 @@ function apiSimpanBanyak(token, recs) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
+    /* berkas sama = jenis + nomor penetapan sama, dan nama sama atau salah satunya kosong (nama disamarkan di penetapan) */
     const ada = {}, kunci = {};
-    const kk = function (r) { return [r.jenis, r.nomorPenetapan, r.nama].map(function (x) { return String(x || '').trim().toUpperCase(); }).join('|'); };
+    const no = function (r) { return String(r.jenis || '') + '|' + String(r.nomorPenetapan || '').toUpperCase().replace(/[\s.]/g, '').replace(/^0+/, ''); };
+    const nm = function (r) { return String(r.nama || '').toUpperCase().replace(/[^A-Z]/g, ''); };
+    const sama = function (r) { const L = kunci[no(r)] || [], n = nm(r); return /\|$/.test(no(r)) ? (!!n && L.indexOf(n) >= 0) : L.some(function (x) { return !x || !n || x === n; }); };
+    const catat = function (r) { (kunci[no(r)] = kunci[no(r)] || []).push(nm(r)); };
     rows_('Berkas').forEach(function (r) {
       ada[r.id] = 1;
       if (r.dihapus === true) return;
-      try { kunci[kk(JSON.parse(r.data))] = 1; } catch (e) {}
+      try { catat(JSON.parse(r.data)); } catch (e) {}
     });
     const now = new Date(), baris = [], log = [];
     let lewat = 0;
     (recs || []).forEach(function (rec) {
       if (!rec || !rec.id || ada[rec.id]) return;
-      if (kunci[kk(rec)]) { lewat++; return; }
-      ada[rec.id] = 1; kunci[kk(rec)] = 1;
+      if (sama(rec)) { lewat++; return; }
+      ada[rec.id] = 1; catat(rec);
       baris.push([rec.id, rec.jenis, rec.nama || '', objek_(rec), JSON.stringify(bersihkan_(rec)), 1, u.nama, now, u.nama, now, false]);
       log.push([now, u.username, u.nama, 'BUAT', rec.id, rec.nama || '', rec.asal || 'Impor spreadsheet']);
     });
@@ -706,7 +710,17 @@ function apiBuatDokumen(token, id, key, judul, b64) {
 
 /* ------------------------------------------------------------ AI pembaca penetapan (Claude) */
 
-const CLAUDE_MODEL = 'claude-sonnet-5';
+/* Dua tingkat model supaya hemat token tanpa mengorbankan akurasi:
+   - HEMAT  (Haiku 5.5, ±20× lebih murah) : ambil data dari TEKS penetapan — tugas ekstraksi, cukup akurat.
+   - TELITI (Sonnet 5.5)                  : penetapan hasil scan/berwatermark berat (baca visual), penyusunan isi BAP,
+                                            dan pembacaan ulang bila hasil HEMAT tidak lolos cek silang dengan teks asli.
+   Model bisa diganti lewat Script Properties CLAUDE_MODEL_HEMAT / CLAUDE_MODEL_TELITI. */
+const CLAUDE_MODEL = 'claude-sonnet-5-5';
+const CLAUDE_MODEL_HEMAT = 'claude-haiku-5-5';
+function modelAI_(mode) {
+  return mode === 'hemat' ? (PROPS.getProperty('CLAUDE_MODEL_HEMAT') || CLAUDE_MODEL_HEMAT)
+    : (PROPS.getProperty('CLAUDE_MODEL_TELITI') || PROPS.getProperty('CLAUDE_MODEL') || CLAUDE_MODEL);
+}
 
 function apiSimpanKunciAI(token, key) {
   const u = super_(token);
@@ -721,12 +735,19 @@ function apiAdaAI(token) {
   user_(token);
   return !!PROPS.getProperty('CLAUDE_KEY');
 }
-function claude_(content, maxTokens) {
-  const opt = {
-    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-    headers: { 'x-api-key': PROPS.getProperty('CLAUDE_KEY'), 'anthropic-version': '2023-06-01' },
-    payload: JSON.stringify({ model: PROPS.getProperty('CLAUDE_MODEL') || CLAUDE_MODEL, max_tokens: maxTokens || 4000, temperature: 0, messages: [{ role: 'user', content: content }] }) };
-  /* gangguan sesaat (429 / 5xx / 529 overloaded / jaringan) → ulangi otomatis, tanpa membuat pengguna menunggu lama */
+/**
+ * Panggil Claude. o.system = instruksi (dikirim sebagai system + cache_control → instruksi yang sama untuk banyak
+ * penetapan dibaca dari cache, ±90% lebih murah), o.mode = 'hemat' | 'teliti'.
+ * Catatan: model generasi 5.x menolak parameter temperature (HTTP 400) — jangan dikirim.
+ */
+function claude_(content, maxTokens, o) {
+  o = o || {};
+  let model = modelAI_(o.mode);
+  const body = { model: model, max_tokens: maxTokens || 4000, output_config: { effort: o.mode === 'hemat' ? 'low' : 'medium' }, messages: [{ role: 'user', content: content }] };
+  if (o.system) body.system = [{ type: 'text', text: o.system, cache_control: { type: 'ephemeral' } }];
+  const opt = { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'x-api-key': PROPS.getProperty('CLAUDE_KEY'), 'anthropic-version': '2023-06-01' }, payload: JSON.stringify(body) };
+  /* gangguan sesaat (429 / 5xx / 529 overloaded / jaringan) → ulangi otomatis; model hemat tidak tersedia → pakai model teliti */
   let res = null, galat = '';
   for (let i = 0; i < 3; i++) {
     try {
@@ -734,21 +755,45 @@ function claude_(content, maxTokens) {
       const c = res.getResponseCode();
       if (c === 200) break;
       galat = 'Claude HTTP ' + c + ': ' + res.getContentText().slice(0, 300);
+      if ((c === 404 || (c === 400 && /model/i.test(galat))) && model !== modelAI_('teliti')) {
+        model = body.model = modelAI_('teliti'); opt.payload = JSON.stringify(body); continue;
+      }
       if (!(c === 429 || c >= 500)) break;
     } catch (e) { galat = String(e.message || e).slice(0, 200); res = null; }
     if (i < 2) Utilities.sleep(1000 * (i + 1));
   }
   if (!res || res.getResponseCode() !== 200) throw new Error(galat || 'Claude tidak bisa dihubungi');
   const j = JSON.parse(res.getContentText());
+  pakaiAI_(j.model || model, j.usage);
   if (j.stop_reason === 'refusal') throw new Error('Claude menolak memproses dokumen ini.');
-  return j.content.map(function (c) { return c.text || ''; }).join('');
+  /* jawaban bisa diawali blok "thinking" — ambil hanya blok teks */
+  return (j.content || []).filter(function (c) { return c.type === 'text'; }).map(function (c) { return c.text || ''; }).join('');
+}
+/** Catat pemakaian token per bulan (Script Properties AI_PAKAI_YYYY-MM) supaya biaya bisa dipantau di Pengaturan. */
+const HARGA_AI_ = { haiku: [0.10, 0.50], sonnet: [2, 10], opus: [5, 25] };
+function pakaiAI_(model, u) {
+  if (!u) return;
+  try {
+    const k = 'AI_PAKAI_' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM'), p = JSON.parse(PROPS.getProperty(k) || '{}');
+    const h = HARGA_AI_[/haiku/.test(model) ? 'haiku' : /opus/.test(model) ? 'opus' : 'sonnet'];
+    const masuk = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) * 1.25 + (u.cache_read_input_tokens || 0) * 0.1;
+    p.n = (p.n || 0) + 1; p.masuk = (p.masuk || 0) + (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
+    p.cache = (p.cache || 0) + (u.cache_read_input_tokens || 0); p.keluar = (p.keluar || 0) + (u.output_tokens || 0);
+    p.usd = Math.round(((p.usd || 0) + (masuk * h[0] + (u.output_tokens || 0) * h[1]) / 1e6) * 10000) / 10000;
+    PROPS.setProperty(k, JSON.stringify(p));
+  } catch (e) {}
+}
+function apiPakaiAI(token) {
+  super_(token);
+  const k = 'AI_PAKAI_' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM');
+  return Object.assign({ bulan: k.slice(9), hemat: modelAI_('hemat'), teliti: modelAI_('teliti') }, JSON.parse(PROPS.getProperty(k) || '{}'));
 }
 /** Panggil Claude lalu ubah ke JSON; bila jawaban terpotong/bukan JSON, ulangi sekali dengan batas token lebih besar. */
-function claudeJson_(content, maxTokens) {
-  try { return jsonDari_(claude_(content, maxTokens)); }
+function claudeJson_(content, maxTokens, o) {
+  try { return jsonDari_(claude_(content, maxTokens, o)); }
   catch (e) {
     if (!/JSON|Unexpected|position/.test(String(e.message || e))) throw e;
-    return jsonDari_(claude_(content, Math.min(16000, (maxTokens || 4000) * 2)));
+    return jsonDari_(claude_(content, Math.min(16000, (maxTokens || 4000) * 2), o));
   }
 }
 function jsonDari_(t) {
@@ -760,29 +805,99 @@ function jsonDari_(t) {
 /** Baca file penetapan (PDF/gambar, base64) dengan Claude dan kembalikan objek data. */
 /** Penetapan sering berwatermark (mis. "SALINAN", "COPY", logo/nama pengadilan miring, cap Direktori Putusan MA). */
 const WATERMARK_ = 'CATATAN WATERMARK: dokumen bisa memuat watermark/cap latar (tulisan miring atau samar seperti "SALINAN", "COPY", "DOKUMEN ELEKTRONIK", nama pengadilan, logo, cap "Direktori Putusan Mahkamah Agung", nomor halaman, atau potongan huruf tersisip di tengah kata). ABAIKAN semuanya; bila sebuah kata/angka terputus atau terselip huruf watermark, rekonstruksi dari konteks kalimat dan dokumen lain. Tetap baca SEMUA data (nama, NIK, tanggal, nomor, alamat, anak/terampu, harta, amar) seolah watermark tidak ada. Jangan mengarang: bila bagian tertentu benar-benar tertutup dan tidak bisa dipastikan, isi kosong.\n\n';
-function apiBacaPenetapanAI(token, b64, mime, prompt) {
-  prompt = WATERMARK_ + prompt;
+/* Instruksi ditaruh di system (bisa di-cache), dokumen di pesan user — urutan ini yang membuat prompt caching bekerja. */
+function sistemAI_(prompt) { return WATERMARK_ + prompt + '\nBalas HANYA satu objek JSON, tanpa penjelasan.'; }
+function apiBacaPenetapanAI(token, b64, mime, prompt, mode) {
   user_(token);
   if (!PROPS.getProperty('CLAUDE_KEY')) return null;
   mime = mime || 'application/pdf';
   const doc = /pdf/.test(mime)
     ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } }
     : { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } };
-  return claudeJson_([doc, { type: 'text', text: prompt + '\nBalas HANYA satu objek JSON, tanpa penjelasan.' }], 8000);
+  /* baca visual (scan/watermark) default model teliti */
+  return claudeJson_([doc, { type: 'text', text: 'Baca dokumen penetapan terlampir sesuai instruksi.' }], 8000, { system: sistemAI_(prompt), mode: mode || 'teliti' });
 }
 /** Versi cepat: kirim TEKS penetapan (hasil baca PDF di browser), bukan file PDF — jauh lebih cepat & hemat. */
-function apiAnalisaTeks(token, teks, prompt, maxTokens) {
+function apiAnalisaTeks(token, teks, prompt, maxTokens, mode) {
   user_(token);
-  prompt = WATERMARK_ + prompt;
   if (!PROPS.getProperty('CLAUDE_KEY')) return null;
   teks = String(teks || '').slice(0, 120000);
-  return claudeJson_([{ type: 'text', text: '<penetapan>\n' + teks + '\n</penetapan>\n\n' + prompt + '\nBalas HANYA satu objek JSON, tanpa penjelasan.' }], maxTokens || 6000);
+  return claudeJson_([{ type: 'text', text: '<penetapan>\n' + teks + '\n</penetapan>' }], maxTokens || 6000, { system: sistemAI_(prompt), mode: mode || 'teliti' });
 }
 function apiTesAI(token) {
   super_(token);
   if (!PROPS.getProperty('CLAUDE_KEY')) throw new Error('Kunci Claude belum diisi.');
-  claude_([{ type: 'text', text: 'Balas satu kata: siap' }], 20);
-  return 'Claude (' + (PROPS.getProperty('CLAUDE_MODEL') || CLAUDE_MODEL) + ') terhubung.';
+  const hasil = [];
+  ['hemat', 'teliti'].forEach(function (m) {
+    try { claude_([{ type: 'text', text: 'Balas satu kata: siap' }], 300, { mode: m }); hasil.push(modelAI_(m) + ' ✓'); }
+    catch (e) { hasil.push(modelAI_(m) + ' ✗ ' + String(e.message || e).slice(0, 120)); }
+  });
+  if (!/✓/.test(hasil.join(''))) throw new Error('Claude tidak terhubung: ' + hasil.join(' · '));
+  return 'Claude terhubung — ' + hasil.join(' · ');
+}
+
+/* ------------------------------------------------------------ impor massal dari folder Google Drive
+   Folder berisi spreadsheet (Google Sheet atau .xlsx "format aplikasi") + PDF penetapan.
+   Data diambil dari spreadsheet (0 token AI); PDF hanya dicocokkan lewat ID/nama file untuk dilengkapi AI bila ada kekosongan.
+   Subfolder bernama "Dikecualikan…/Kecuali…/Arsip…/Batal…" → PDF di dalamnya ditandai dikecualikan. */
+function idDrive_(s) {
+  s = String(s || '').trim();
+  const m = s.match(/\/(?:folders|d)\/([\w-]{20,})/) || s.match(/[?&]id=([\w-]{20,})/) || s.match(/^([\w-]{20,})$/);
+  return m ? m[1] : '';
+}
+function anakDrive_(id) {
+  const out = []; let tok = null;
+  do {
+    const r = Drive.Files.list({ q: "'" + id + "' in parents and trashed = false", fields: 'nextPageToken, files(id, name, mimeType)', pageSize: 1000, pageToken: tok, supportsAllDrives: true, includeItemsFromAllDrives: true });
+    (r.files || []).forEach(function (f) { out.push(f); }); tok = r.nextPageToken;
+  } while (tok);
+  return out;
+}
+const MIME_XLSX_ = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+/** Baca semua sheet (Google Sheet atau .xlsx — .xlsx dikonversi sementara lalu dibuang). */
+function bacaSemuaSheet_(f) {
+  let id = f.id, sementara = null;
+  if (f.mimeType !== MimeType.GOOGLE_SHEETS) {
+    sementara = Drive.Files.copy({ name: f.name + ' (sementara impor)', mimeType: MimeType.GOOGLE_SHEETS, parents: [folderRoot_().getId()] }, f.id, { supportsAllDrives: true }).id;
+    id = sementara;
+  }
+  try {
+    return SpreadsheetApp.openById(id).getSheets().map(function (sh) {
+      const v = sh.getDataRange().getDisplayValues();
+      return { nama: sh.getName(), header: v[0] || [], rows: v.slice(1).filter(function (r) { return r.join('').trim(); }) };
+    }).filter(function (x) { return x.rows.length; });
+  } finally { if (sementara) try { DriveApp.getFileById(sementara).setTrashed(true); } catch (e) {} }
+}
+function apiBacaSumber(token, url) {
+  super_(token);
+  const id = idDrive_(url);
+  if (!id) throw new Error('Tautan Google Drive / Spreadsheet tidak dikenali. Tempel tautan folder, spreadsheet, atau file .xlsx.');
+  let f;
+  try { f = Drive.Files.get(id, { fields: 'id, name, mimeType', supportsAllDrives: true }); }
+  catch (e) { throw new Error('Tidak bisa membuka tautan (pastikan dibagikan ke akun pemilik aplikasi atau "siapa saja yang memiliki link"): ' + String(e.message || e).slice(0, 150)); }
+  const out = { judul: f.name, sheets: [], pdf: [], kecuali: [], folderKecuali: [] };
+  const PDF = function (x, kec) { if (x.mimeType === 'application/pdf' || /\.pdf$/i.test(x.name)) (kec ? out.kecuali : out.pdf).push({ id: x.id, nama: x.name }); };
+  if (f.mimeType === 'application/vnd.google-apps.folder') {
+    anakDrive_(f.id).forEach(function (x) {
+      if (x.mimeType === 'application/vnd.google-apps.folder') {
+        const kec = /kecuali|dikecualikan|arsip|batal|tidak dilayani/i.test(x.name);
+        if (kec) out.folderKecuali.push(x.name);
+        anakDrive_(x.id).forEach(function (y) { PDF(y, kec); });
+      } else if (x.mimeType === MimeType.GOOGLE_SHEETS || x.mimeType === MIME_XLSX_) {
+        bacaSemuaSheet_(x).forEach(function (s) { s.file = x.name; out.sheets.push(s); });
+      } else PDF(x, false);
+    });
+  } else if (f.mimeType === MimeType.GOOGLE_SHEETS || f.mimeType === MIME_XLSX_) {
+    out.sheets = bacaSemuaSheet_(f).map(function (s) { s.file = f.name; return s; });
+  } else throw new Error('"' + f.name + '" bukan folder atau spreadsheet.');
+  return out;
+}
+/** Ambil isi PDF penetapan di Drive (base64) untuk dibaca teksnya di browser — membaca teks di browser tidak memakai token AI. */
+function apiAmbilPdf(token, id) {
+  user_(token);
+  const b = DriveApp.getFileById(idDrive_(id)).getBlob();
+  if (b.getBytes().length > 30 * 1024 * 1024) throw new Error('File terlalu besar (>30 MB).');
+  return { nama: b.getName(), mime: b.getContentType(), b64: Utilities.base64Encode(b.getBytes()) };
 }
 
 /* ------------------------------------------------------------ impor dari sheet AutoCrat (mis. PERWALIAN RIAU) */
