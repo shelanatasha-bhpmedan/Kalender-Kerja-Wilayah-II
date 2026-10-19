@@ -197,7 +197,11 @@ function apiGantiPassword(token, lama, baru) {
 function apiInit(token) {
   const u = user_(token);
   const out = { user: u, settings: settings_(), berkas: berkas_(u.role === 'superadmin'), sps: spsInfo_(), folderUrl: PROPS.getProperty('FOLDER_ID') ? 'https://drive.google.com/drive/folders/' + PROPS.getProperty('FOLDER_ID') : folderRoot_().getUrl(), ai: !!PROPS.getProperty('CLAUDE_KEY') };
-  if (u.role === 'superadmin') { out.users = daftarPengguna_(); try { if (perluBapSiap_() && terapkanBapSiap_(u)) out.berkas = berkas_(true); } catch (e) {} }
+  if (u.role === 'superadmin') {
+    out.users = daftarPengguna_();
+    try { if (perluBapSiap_() && terapkanBapSiap_(u)) out.berkas = berkas_(true); } catch (e) {}
+    if (typeof DATA_IMPOR !== 'undefined') out.dataSiap = { n: DATA_IMPOR.length, judul: typeof DATA_IMPOR_JUDUL === 'undefined' ? '' : DATA_IMPOR_JUDUL };
+  }
   return out;
 }
 function berkas_(termasukHapus) {
@@ -891,6 +895,13 @@ function apiBacaSumber(token, url) {
     out.sheets = bacaSemuaSheet_(f).map(function (s) { s.file = f.name; return s; });
   } else throw new Error('"' + f.name + '" bukan folder atau spreadsheet.');
   return out;
+}
+/** Data siap impor (file DataImpor.gs — hanya dipasang sementara di proyek Apps Script, tidak di repositori):
+ *  berkas yang sudah dibaca dari salinan penetapan beserta isi BAP. Diimpor lewat dialog impor (tanpa token AI). */
+function apiDataSiap(token) {
+  super_(token);
+  if (typeof DATA_IMPOR === 'undefined') return null;
+  return { judul: typeof DATA_IMPOR_JUDUL === 'undefined' ? 'Data siap impor' : DATA_IMPOR_JUDUL, siap: DATA_IMPOR, sheets: [], pdf: [], kecuali: [], folderKecuali: [] };
 }
 /** Ambil isi PDF penetapan di Drive (base64) untuk dibaca teksnya di browser — membaca teks di browser tidak memakai token AI. */
 function apiAmbilPdf(token, id) {
