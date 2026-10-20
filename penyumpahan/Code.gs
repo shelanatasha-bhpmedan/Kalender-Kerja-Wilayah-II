@@ -31,9 +31,43 @@ const PENGGUNA_AWAL = [
 
 /* ------------------------------------------------------------ web app */
 
+/* tampilan diambil dari GitHub (branch aplikasi); bila gagal memakai file Index di proyek ini. …/exec?segar=1 = muat ulang segera */
 const UI_URL = 'https://raw.githubusercontent.com/damayantielsintha-wq/Kalender-Kerja-Wilayah-II/claude/dokumen-penyumpahan-app-3s2ts5/penyumpahan/Index.html';
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Index')
+const UI_CACHE_DETIK = 600;
+const UI_POTONG = 45000; // batas CacheService ±100 KB per kunci
+const UI_KUNCI = 'uiK_'; // ganti awalan bila sumber UI_URL pindah, supaya tampilan lama di cache tidak dipakai
+
+function uiDariGitHub_(segar) {
+  const cache = CacheService.getScriptCache();
+  if (!segar) {
+    const n = Number(cache.get(UI_KUNCI + 'n') || 0);
+    if (n) {
+      const keys = [];
+      for (let i = 0; i < n; i++) keys.push(UI_KUNCI + i);
+      const parts = cache.getAll(keys);
+      if (Object.keys(parts).length === n) return keys.map(function (k) { return parts[k]; }).join('');
+    }
+  }
+  try {
+    const res = UrlFetchApp.fetch(UI_URL + '?t=' + Date.now(), { muteHttpExceptions: true });
+    const html = res.getContentText('UTF-8');
+    if (res.getResponseCode() !== 200 || html.indexOf('</html>') < 0) return null;
+    const simpan = {};
+    let k = 0;
+    for (let i = 0; i < html.length; i += UI_POTONG) simpan[UI_KUNCI + (k++)] = html.slice(i, i + UI_POTONG);
+    simpan[UI_KUNCI + 'n'] = String(k);
+    try { cache.putAll(simpan, UI_CACHE_DETIK); } catch (e) { /* terlalu besar untuk cache: tetap tampil */ }
+    return html;
+  } catch (e) {
+    return null;
+  }
+}
+
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  const html = p.ui === 'lokal' ? null : uiDariGitHub_(p.segar === '1');
+  const out = html ? HtmlService.createHtmlOutput(html) : HtmlService.createHtmlOutputFromFile('Index');
+  return out
     .setTitle('Dokumen Penyumpahan BHP')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -197,6 +231,7 @@ function apiGantiPassword(token, lama, baru) {
 function apiInit(token) {
   const u = user_(token);
   const out = { user: u, settings: settings_(), berkas: berkas_(u.role === 'superadmin'), sps: spsInfo_(), folderUrl: PROPS.getProperty('FOLDER_ID') ? 'https://drive.google.com/drive/folders/' + PROPS.getProperty('FOLDER_ID') : folderRoot_().getUrl(), ai: !!PROPS.getProperty('CLAUDE_KEY') };
+  if (typeof DATA_TAMBAHAN !== 'undefined') out.tambahan = DATA_TAMBAHAN; // data pribadi tambahan Kepri: hanya di proyek Apps Script, tidak di git
   if (u.role === 'superadmin') {
     out.users = daftarPengguna_();
     try { if (perluBapSiap_() && terapkanBapSiap_(u)) out.berkas = berkas_(true); } catch (e) {}

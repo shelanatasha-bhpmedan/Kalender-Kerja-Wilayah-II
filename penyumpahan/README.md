@@ -16,6 +16,13 @@ Folder ini hanya berisi **tampilan** aplikasi Dokumen Penyumpahan. Backend (`Cod
 - **Dokumen yang dibuat**: Surat Antar ke Wali/Pengampu, Surat Antar ke Lurah, Undangan Sumpah (bila sumpah di kantor/Kanwil/Zoom), dan Dokumen Penyumpahan (Permohonan, BAP, BA Sumpah, BA Inventarisasi). *Undangan ke Kepala Desa/Lurah (menyaksikan)* dan *Tanda Terima Berkas* dihapus dari aplikasi.
 - Tampilan desktop tidak berubah.
 
+## Gabungan 20 Okt 2026 (Konten-BHP ccr-82a96c14 + data siap)
+- Sumber tampilan disatukan lagi di branch ini: seluruh perubahan Konten-BHP (Impor Otomatis 1 klik, impor terjadwal, Surat Massal Kepri, Berkas Dihapus, Lengkapi berkas yang tampil, dll.) + fitur branch ini (data siap impor, token nama di isi BAP, catatan pemeriksaan, tautan Direktori MA).
+- `Code.gs`: `UI_URL` menunjuk ke `penyumpahan/Index.html` di branch ini (awalan cache `uiK_` supaya tampilan lama tidak terpakai).
+- **Data siap impor diterapkan otomatis** sekali saat admin utama membuka aplikasi: berkas baru ditambahkan (aturan kelayakan & pencegahan dobel sama), berkas yang sudah ada hanya dilengkapi kolom yang kosong. Tanda `dataSiapDiterapkan` disimpan di Pengaturan.
+- Berkas hasil baca penuh penetapan (`dibacaPenuh`) tidak ikut *Hapus berkas lama Kepulauan Riau*.
+- ZIP Surat Massal: nama file diawali nomor surat SPS (mis. `3385 - NAMA - Surat Antar ke Wali.docx`).
+
 ## Pasang sekali: tampilan otomatis dari GitHub (disarankan)
 Ganti `const UI_URL` dan `function doGet()` di `Code.gs` dengan isi `doGet-dari-GitHub.gs`, lalu deploy **Versi baru** sekali. Setelah itu setiap `Index.html` yang di-push ke branch ini aktif sendiri (maks. 10 menit; `…/exec?segar=1` untuk langsung). Bila GitHub tidak bisa dihubungi, aplikasi memakai file `Index` di proyek (`…/exec?ui=lokal` untuk memaksanya).
 
