@@ -412,9 +412,12 @@ const baris=t=>String(t||'').split('\n').map(s=>s.trim()).filter(Boolean);
 /* kosong → baris titik-titik bernomor untuk diisi tangan oleh petugas di lapangan; 4 pt dari subjudul, 2 pt antarbaris (jarak tetap) */
 const garis=(n,left,i)=>`<p class="ni" data-n="${i+1}." data-line="1"${i<n-1?' data-keep="1"':''} style="margin-left:${left}pt;margin-top:${i?2:4}pt;margin-bottom:0">&nbsp;</p>`;
 const daftarHarta=(t,n=3)=>{const b=baris(t);return b.length?b.map((x,i)=>NP((i+1)+'.',54,esc(x))).join(''):[...Array(n)].map((_,i)=>garis(n,54,i)).join('')};
-function head(no,hal,r){return `<table class="hd" style="width:100%;margin-bottom:12pt"><tr><td style="width:70pt">Nomor</td><td>:</td><td>${V(no)}</td><td style="text-align:right">${tgl(r.tanggalSurat)}</td></tr>
+/* Hal: kolom ±43% lebar teks (tidak sampai margin kanan), rata kiri-kanan; baris dipatah otomatis (tanpa <br>) */
+const HAL_W=194;
+function head(no,hal,r){hal=String(hal).replace(/<br\s*\/?>\s*/gi,' ').replace(/ Dan Inventarisasi/,' dan Inventarisasi');
+  return `<table class="hd" style="width:100%;margin-bottom:12pt"><tr><td style="width:70pt">Nomor</td><td>:</td><td style="width:${HAL_W}pt">${V(no)}</td><td style="text-align:right">${tgl(r.tanggalSurat)}</td></tr>
 <tr><td>Sifat</td><td>:</td><td>Segera</td><td></td></tr><tr><td>Lampiran</td><td>:</td><td>-</td><td></td></tr>
-<tr><td>Hal</td><td>:</td><td colspan=2>${hal}</td></tr></table>`}
+<tr><td>Hal</td><td>:</td><td style="text-align:justify">${hal}</td><td></td></tr></table>`}
 /* Kepulauan Riau: penyumpahan dalam satu rentang kunjungan (Pengaturan → Kunjungan Kepulauan Riau) — hari & jam dipilih wali/pengampu */
 const isKepri=r=>provinsiBerkas(r)==='Kepulauan Riau';
 const kunjKepriCfg=()=>{const k={...DEF_SET.kepri,...(SET.kepri||{})};return pd(k.mulai)&&pd(k.sampai)&&k.sampai>=k.mulai?k:null};
@@ -1310,7 +1313,7 @@ function imgRun(){const id=imgId++,cx=736600,cy=825500;
   return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="Logo ${id}"/><a:graphic xmlns:a="http:\/\/schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http:\/\/schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http:\/\/schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`}
 function para(el,o={}){
   const cs=el.classList, s=el.style;
-  let jc=o.jc||'both';if(cs.contains('ctr')||s.textAlign==='center')jc='center';else if(s.textAlign==='right')jc='right';else if(s.textAlign==='left')jc='left';
+  let jc=o.jc||'both';if(cs.contains('ctr')||s.textAlign==='center')jc='center';else if(s.textAlign==='right')jc='right';else if(s.textAlign==='left')jc='left';else if(s.textAlign==='justify')jc='both';
   const first=(o.noInd||cs.contains('ni')||cs.contains('ctr')||jc==='center')?0:720;
   const left=tw(ptOf(s.marginLeft)+(o.left||0)), mw=ptOf(s.maxWidth), right=mw?tw(453-ptOf(s.marginLeft)-mw):0;
   const ttdP=!!el.closest&&!!el.closest('[data-keep="ttd"]'),fl=o.line||ttdP?1:FIT.line*(parseFloat(el.dataset&&(el.dataset.lx||el.parentElement&&el.parentElement.dataset&&el.parentElement.dataset.lx))||1);
