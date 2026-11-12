@@ -25,7 +25,7 @@ function doGet() {
   return HtmlService.createTemplateFromFile('Index').evaluate()
     .setTitle(APP_NAME)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover')
-    .addMetaTag('theme-color', '#6d5dfc')
+    .addMetaTag('theme-color', '#1b2345')
     .addMetaTag('apple-mobile-web-app-capable', 'yes')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -127,8 +127,75 @@ function parseEvent_(e) {
 
 /* ---------------------------------------------------------------- API */
 
+/* Agenda yang dimasukkan otomatis ke sheet Kegiatan (sekali saja per id; bila dihapus tidak dibuat ulang). */
+const AGENDA_BAWAAN = [{
+  id: 'agd-20261113-monitoring-pengampuan-ariel',
+  judul: 'Rapat Monitoring Lanjutan Pengampuan an. Sdri. Ariel Ruth Agustin Aritonang',
+  mulai: '2026-11-13', selesai: '2026-11-13', jamMulai: '10:00', jamSelesai: '12:00', seharian: false,
+  lokasi: 'Daring — Zoom Meeting (ID 320 800 6444, kata sandi: bhpmedan)',
+  kategori: 'Pengampuan', prioritas: 'Tinggi', status: 'Direncanakan', peserta: [],
+  tautan: ['https://us06web.zoom.us/j/3208006444'],
+  deskripsi: [
+    'Acara: Penyampaian hasil musyawarah keluarga.',
+    'Rapat ini menindaklanjuti Rapat Monitoring Pengampuan tanggal 9 November 2026. Waktu dimulai pukul 10.00 WIB sampai selesai.',
+    '',
+    'ZOOM MEETING',
+    '• Tautan: https://us06web.zoom.us/j/3208006444',
+    '• ID Rapat: 320 800 6444',
+    '• Kata sandi: bhpmedan',
+    '',
+    'UNDANGAN (Medan, 9 November 2026, sifat Penting, ditandatangani Kepala BHP Medan Syafriadi Lubis)',
+    '1. Bapak Janter Jameston Pangaribuan — W.2.AHU.AHU.1-AH.06.03-3688 (WAJIB HADIR)',
+    '2. Ibu Jurnalita Pangaribuan — W.2.AHU.AHU.1-AH.06.03-3689 (WAJIB HADIR)',
+    '3. Ibu Vera Minar Siagian — W.2.AHU.AHU.1-AH.06.03-3690 (WAJIB HADIR)',
+    '4. Ibu Nora Sarmila Dewi Panjaitan (Pengampu) — W.2.AHU.AHU.1-AH.06.03-3691',
+    'Tembusan: Direktur Jenderal Administrasi Hukum Umum Kementerian Hukum.',
+    '',
+    'CATATAN TINDAK LANJUT (WhatsApp, 12 November 2026)',
+    'Ibu Vera, Ibu Jurnalita, dan Bapak Janter wajib hadir karena rapat ini menyangkut hak-hak keperdataan Sdri. Ariel Ruth ke depannya. BHP Medan ingin mendengar penjelasan dari pihak keluarga dekat lainnya sebagai bahan pertimbangan.',
+    'Apabila Ibu Nora mengajukan pengunduran diri sebagai pengampu di pengadilan, BHP Medan memerlukan pertimbangan keluarga untuk memberikan rekomendasi kepada Hakim mengenai siapa yang berhak menjadi Pengampu Pengganti.',
+    '',
+    'STATUS KONFIRMASI KEHADIRAN (per 12 November 2026)',
+    '• Ibu Jurnalita Pangaribuan: Hadir (polling WA)',
+    '• Ibu Vera Minar Siagian: Hadir (polling WA)',
+    '• Bapak Janter Jameston Pangaribuan: belum menjawab',
+    '• Ibu Nora Sarmila Dewi Panjaitan: belum memilih di polling, sempat menelepon pukul 08.20',
+  ].join('\n'),
+  checklist: [
+    { t: 'Kirim surat undangan resmi + tautan Zoom ke 4 pihak (9 Nov)', d: true },
+    { t: 'Kirim pengingat & polling kehadiran via WhatsApp (12 Nov)', d: true },
+    { t: 'Konfirmasi kehadiran Bapak Janter Jameston Pangaribuan', d: false },
+    { t: 'Konfirmasi kehadiran Ibu Nora Sarmila Dewi Panjaitan (telepon balik)', d: false },
+    { t: 'Buka ruang Zoom 15 menit lebih awal & cek rekaman', d: false },
+    { t: 'Siapkan daftar hadir daring & notulen', d: false },
+    { t: 'Catat hasil musyawarah keluarga & usulan Pengampu Pengganti', d: false },
+    { t: 'Susun laporan/rekomendasi tindak lanjut kepada Kepala', d: false },
+  ],
+}];
+
+function ensureAgenda_() {
+  const done = JSON.parse(PROP.getProperty('AGENDA_DONE') || '[]');
+  const todo = AGENDA_BAWAAN.filter(function (a) { return done.indexOf(a.id) < 0; });
+  if (!todo.length) return;
+  withLock_(function () {
+    const ada = readAll_('events').map(function (e) { return e.id; });
+    const t = now_();
+    todo.forEach(function (a) {
+      if (ada.indexOf(a.id) < 0) {
+        const rec = Object.assign({}, a, { dibuatOleh: 'sistem', dibuatPada: t, diubahOleh: 'sistem', diubahPada: t, dihapus: false });
+        sheet_('events').appendRow(toRow_('events', rec));
+        log_('BUAT', rec, 'Agenda dimasukkan otomatis');
+      }
+      done.push(a.id);
+    });
+    PROP.setProperty('AGENDA_DONE', JSON.stringify(done));
+    bump_();
+  });
+}
+
 function apiBootstrap() {
   ensureSetup_();
+  try { ensureAgenda_(); } catch (e) { console.warn('ensureAgenda_: ' + e); }
   const data = apiData();
   data.user = me_();
   data.rootUrl = 'https://drive.google.com/drive/folders/' + PROP.getProperty('ROOT_ID');
