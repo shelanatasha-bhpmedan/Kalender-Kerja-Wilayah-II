@@ -469,7 +469,6 @@ const Demo = (() => {
     apiAiDocs(i) { const e = db.events.find(x => x.id === i); log('AI_DOKUMEN', e, 'template'); save(); return { sumber: 'template', docs: null }; },
     apiCreateDoc(i, nama, isi) { return this.apiUpload(i, nama + '.txt', 'text/plain', btoa(unescape(encodeURIComponent(isi)))); },
     apiAddChecklist(i, items) { const e = db.events.find(x => x.id === i); [].concat(items).forEach(t => { if (!e.checklist.some(c => c.t === t)) e.checklist.push({ t, d: false }); }); log('CHECKLIST', e, '+ ' + items); save(); return e; },
-    apiShareLink(kind, value) { return { url: 'https://bit.ly/KalenderKerjaWilayah2?' + kind + '=' + encodeURIComponent(value), bitly: false }; },
     apiLogs(limit, eventId) { return db.logs.filter(l => !eventId || l.eventId === eventId).slice(-(limit || 300)).reverse(); },
   };
 })();
@@ -743,35 +742,29 @@ function logItem(l, icon) {
 function setView(v) { S.view = v; localStorage.setItem('kkw2-view', v); document.getElementById('side').classList.remove('open'); render(); }
 function shift(n) { const c = S.cursor; S.view === 'week' ? c.setDate(c.getDate() + 7 * n) : c.setMonth(c.getMonth() + n, 1); render(); }
 /* ============================================================ berbagi (link pendek bit.ly)
- * Link pendek mengarah ke URL /exec aplikasi. Bitly meneruskan parameter ?ev= / ?d=,
+ * Memakai link bit.ly kalender yang sudah ada (tidak membuat link baru). Bitly meneruskan parameter ?ev= / ?d=,
  * sehingga penerima langsung dibawa ke kegiatan atau tanggal yang dibagikan. */
-const SHARE_BASE = 'https://bit.ly/KalenderKerjaWilayah2';
+const SHARE_BASE = 'https://bit.ly/kalenderkerjawilayah2';
 function shareLink(p) { return SHARE_BASE + '?' + Object.entries(p).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&'); }
 function shareText(e) {
   return [`📅 *${e.judul}*`, `🗓️ ${HR_FULL[parse(e.mulai).getDay()]}, ${fmtLong(e.mulai).replace(/^\w+, /, '')}${e.selesai !== e.mulai ? ' s.d. ' + fmtLong(e.selesai) : ''}`,
     `🕒 ${timeStr(e)}`, e.lokasi ? `📍 ${e.lokasi}` : '', (e.tautan || [])[0] ? `🔗 ${e.tautan[0]}` : ''].filter(Boolean).join('\n');
 }
-async function shortLink(kind, value) {
-  try { const r = await call('apiShareLink', kind, value); if (r && r.url) return r.url; } catch (e) {}
-  return shareLink({ [kind]: value });
-}
-async function shareEvent(id) {
+function shareEvent(id) {
   const e = S.events.find(x => x.id === id); if (!e) return;
-  toast('⏳ Membuat link bit.ly…');
-  shareSheet('Bagikan kegiatan', shareText(e) + '\n\nDetail lengkap di Kalender Kerja Wilayah II:\n' + await shortLink('ev', id));
+  shareSheet('Bagikan kegiatan', shareText(e) + '\n\nDetail lengkap di Kalender Kerja Wilayah II:\n' + shareLink({ ev: id }));
 }
-async function shareDay(k) {
+function shareDay(k) {
   k = k || S.sel || todayKey();
   const list = S.events.filter(e => e.mulai <= k && e.selesai >= k).sort((a, b) => (a.jamMulai || '').localeCompare(b.jamMulai || ''));
   const head = `📅 *Kegiatan ${HR_FULL[parse(k).getDay()]}, ${fmtLong(k).replace(/^\w+, /, '')}*`;
   const body = list.length ? list.map((e, i) => `${i + 1}. ${e.judul}\n   🕒 ${timeStr(e)}${e.lokasi ? ' · 📍 ' + e.lokasi : ''}`).join('\n') : 'Belum ada kegiatan.';
-  toast('⏳ Membuat link bit.ly…');
-  shareSheet('Bagikan kegiatan tanggal ini', head + '\n' + body + '\n\nLihat di Kalender Kerja Wilayah II:\n' + await shortLink('d', k));
+  shareSheet('Bagikan kegiatan tanggal ini', head + '\n' + body + '\n\nLihat di Kalender Kerja Wilayah II:\n' + shareLink({ d: k }));
 }
 function shareSheet(judul, teks) {
   openModal(`<div class="mh"><h2>🔗 ${esc(judul)}</h2><button class="icon-btn" onclick="closeModal()">✕</button></div>
   <div class="mb"><div class="f"><textarea id="shareTxt" style="min-height:220px">${esc(teks)}</textarea></div>
-  <small style="color:var(--muted)">Link bit.ly dibuat otomatis dan langsung membuka kegiatan atau tanggal ini. Alamat utama kalender: <b>bit.ly/KalenderKerjaWilayah2</b>.</small></div>
+  <small style="color:var(--muted)">Link <b>bit.ly/kalenderkerjawilayah2</b> langsung membuka kegiatan atau tanggal ini.</small></div>
   <div class="mf"><button class="btn btn-primary" onclick="copyShare()">📋 Salin</button>
   <button class="btn btn-soft" onclick="window.open('https://wa.me/?text='+encodeURIComponent(document.getElementById('shareTxt').value),'_blank')">💬 Kirim via WhatsApp</button>
   ${navigator.share ? '<button class="btn btn-soft" onclick="navigator.share({text:document.getElementById(\'shareTxt\').value}).catch(()=>{})">📤 Bagikan…</button>' : ''}</div>`);

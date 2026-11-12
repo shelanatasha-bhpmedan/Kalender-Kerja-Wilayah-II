@@ -50,12 +50,6 @@ Setelah disiapkan sekali, setiap push yang mengubah `Code.gs`, `Index.html`, ata
 
 > File `.clasprc.json` berisi akses ke akun Google Anda. Simpan hanya sebagai secret GitHub dan jangan pernah di-commit ke repo.
 
-## 🔗 Link bit.ly otomatis
-1. Login ke Bitly, buka **Settings → Developer settings → API**, lalu buat **access token**.
-2. Di Apps Script, buka **Setelan proyek → Properti skrip**, lalu tambahkan `BITLY_TOKEN` berisi token tersebut.
-
-Setelah itu `bit.ly/KalenderKerjaWilayah2` otomatis diarahkan ke aplikasi ini, dan tombol 🔗 **Bagikan** pada kegiatan atau tanggal langsung membuat link bit.ly khusus yang membuka kegiatan atau tanggal tersebut. Tanpa token, tombol Bagikan memakai link panjang Apps Script.
-
 ## 🧪 Coba tanpa deploy
 Buka `Index.html` langsung di browser. Aplikasi otomatis masuk **mode demo** (data disimpan di localStorage).
 
