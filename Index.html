@@ -323,6 +323,7 @@ svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
       <div class="grow hide-m"></div>
       <div class="search"><svg><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="q" placeholder="Cari kegiatan, lokasi, orang…" oninput="render()"><kbd class="hide-m">Ctrl K</kbd></div>
+      <button class="icon-btn" onclick="shareDay(S.sel)" title="Bagikan kegiatan di tanggal terpilih (link bit.ly)"><svg><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
       <div class="live" id="live" title="Sinkron realtime"><i></i><span class="hide-m">Live</span></div>
       <button class="icon-btn hide-m" onclick="openPalette()" title="Menu cepat"><svg><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
       <div class="avatar" id="me"></div>
@@ -740,6 +741,47 @@ function logItem(l, icon) {
 /* ============================================================ interactions */
 function setView(v) { S.view = v; localStorage.setItem('kkw2-view', v); document.getElementById('side').classList.remove('open'); render(); }
 function shift(n) { const c = S.cursor; S.view === 'week' ? c.setDate(c.getDate() + 7 * n) : c.setMonth(c.getMonth() + n, 1); render(); }
+/* ============================================================ berbagi (link pendek bit.ly)
+ * Memakai link bit.ly kalender yang sudah ada (tidak membuat link baru). Bitly meneruskan parameter ?ev= / ?d=,
+ * sehingga penerima langsung dibawa ke kegiatan atau tanggal yang dibagikan. */
+const SHARE_BASE = 'https://bit.ly/kalenderkerjawilayah2';
+function shareLink(p) { return SHARE_BASE + '?' + Object.entries(p).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&'); }
+function shareText(e) {
+  return [`📅 *${e.judul}*`, `🗓️ ${HR_FULL[parse(e.mulai).getDay()]}, ${fmtLong(e.mulai).replace(/^\w+, /, '')}${e.selesai !== e.mulai ? ' s.d. ' + fmtLong(e.selesai) : ''}`,
+    `🕒 ${timeStr(e)}`, e.lokasi ? `📍 ${e.lokasi}` : '', (e.tautan || [])[0] ? `🔗 ${e.tautan[0]}` : ''].filter(Boolean).join('\n');
+}
+function shareEvent(id) {
+  const e = S.events.find(x => x.id === id); if (!e) return;
+  shareSheet('Bagikan kegiatan', shareText(e) + '\n\nDetail lengkap di Kalender Kerja Wilayah II:\n' + shareLink({ ev: id }));
+}
+function shareDay(k) {
+  k = k || S.sel || todayKey();
+  const list = S.events.filter(e => e.mulai <= k && e.selesai >= k).sort((a, b) => (a.jamMulai || '').localeCompare(b.jamMulai || ''));
+  const head = `📅 *Kegiatan ${HR_FULL[parse(k).getDay()]}, ${fmtLong(k).replace(/^\w+, /, '')}*`;
+  const body = list.length ? list.map((e, i) => `${i + 1}. ${e.judul}\n   🕒 ${timeStr(e)}${e.lokasi ? ' · 📍 ' + e.lokasi : ''}`).join('\n') : 'Belum ada kegiatan.';
+  shareSheet('Bagikan kegiatan tanggal ini', head + '\n' + body + '\n\nLihat di Kalender Kerja Wilayah II:\n' + shareLink({ d: k }));
+}
+function shareSheet(judul, teks) {
+  openModal(`<div class="mh"><h2>🔗 ${esc(judul)}</h2><button class="icon-btn" onclick="closeModal()">✕</button></div>
+  <div class="mb"><div class="f"><textarea id="shareTxt" style="min-height:220px">${esc(teks)}</textarea></div>
+  <small style="color:var(--muted)">Link <b>bit.ly/kalenderkerjawilayah2</b> langsung membuka kegiatan atau tanggal ini.</small></div>
+  <div class="mf"><button class="btn btn-primary" onclick="copyShare()">📋 Salin</button>
+  <button class="btn btn-soft" onclick="window.open('https://wa.me/?text='+encodeURIComponent(document.getElementById('shareTxt').value),'_blank')">💬 Kirim via WhatsApp</button>
+  ${navigator.share ? '<button class="btn btn-soft" onclick="navigator.share({text:document.getElementById(\'shareTxt\').value}).catch(()=>{})">📤 Bagikan…</button>' : ''}</div>`);
+}
+function copyShare() {
+  const t = document.getElementById('shareTxt'); t.select();
+  const ok = () => toast('✅ Teks & link disalin');
+  (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(ok, () => { try { document.execCommand('copy'); ok(); } catch (e) { toast('Salin manual: tekan Ctrl+C'); } });
+}
+/** Buka kegiatan/tanggal dari link yang dibagikan (?ev=ID atau ?d=YYYY-MM-DD). */
+function openFromLink(p) {
+  p = p || {}; const one = v => Array.isArray(v) ? v[0] : v;
+  const ev = one(p.ev), d = one(p.d);
+  if (ev) { const e = S.events.find(x => x.id === ev); if (e) { pickDay(e.mulai); openDetail(ev); } else toast('Kegiatan yang dibagikan tidak ditemukan atau sudah dihapus'); }
+  else if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) { pickDay(d); if (!matchMedia('(max-width:900px)').matches) { S.view = 'agenda'; render(); } }
+}
+
 function goToday() { S.cursor = new Date(); S.sel = todayKey(); render(); }
 function pickDay(k) { S.cursor = parse(k); S.sel = k; if (S.view !== 'week') S.view = S.view === 'month' ? 'month' : S.view; document.getElementById('side').classList.remove('open'); render(); }
 function toggleCat(n) { S.hidden.has(n) ? S.hidden.delete(n) : S.hidden.add(n); localStorage.setItem('kkw2-hidden', JSON.stringify([...S.hidden])); render(); }
@@ -887,7 +929,7 @@ function openDetail(id, tab) {
   const e = S.events.find(x => x.id === id); if (!e) return toast('Kegiatan tidak ditemukan');
   current = e; tab = tab || 'detail';
   const c = color(e), nf = filesOf(id).length, nc = commentsOf(id).length;
-  openModal(`<div class="mh"><h2></h2><button class="icon-btn" title="Duplikat" onclick="dup('${id}')">⧉</button>
+  openModal(`<div class="mh"><h2></h2><button class="icon-btn" title="Bagikan kegiatan (link bit.ly)" onclick="shareEvent('${id}')">🔗</button><button class="icon-btn" title="Duplikat" onclick="dup('${id}')">⧉</button>
     <button class="icon-btn" title="Tambah ke Google Calendar pribadi" onclick="window.open(gcalLink(current),'_blank')">📆</button>
     <button class="icon-btn" title="Ubah" onclick="openForm('${id}')">✏️</button><button class="icon-btn" onclick="closeModal()">✕</button></div>
   <div class="tabs">${[['detail', 'Detail'], ['files', `Lampiran (${nf})`], ['ai', '✨ AI Dokumen'], ['comments', `Diskusi (${nc})`], ['history', 'Riwayat']].map(([k, l]) =>
@@ -1111,7 +1153,7 @@ function exportICS() {
 
 /* ---------- command palette */
 const CMDS = [
-  ['✨', 'Kegiatan baru', () => openForm(), 'N'], ['📅', 'Tampilan Bulan', () => setView('month'), 'M'], ['🗓️', 'Tampilan Minggu', () => setView('week'), 'W'],
+  ['✨', 'Kegiatan baru', () => openForm(), 'N'], ['🔗', 'Bagikan kegiatan di tanggal terpilih', () => shareDay(S.sel), ''], ['📅', 'Tampilan Bulan', () => setView('month'), 'M'], ['🗓️', 'Tampilan Minggu', () => setView('week'), 'W'],
   ['📋', 'Tampilan Agenda', () => setView('agenda'), 'A'], ['✅', 'To Do List', () => setView('todo'), 'O'], ['🧩', 'Papan status (Kanban)', () => setView('board'), 'B'], ['📊', 'Statistik & dashboard', () => setView('stats'), 'S'],
   ['📜', 'Log aktivitas', () => setView('log'), 'L'], ['🎯', 'Ke hari ini', goToday, 'T'],
   ['⬇️', 'Ekspor CSV', exportCSV, ''], ['📆', 'Ekspor .ics', exportICS, ''], ['📁', 'Buka folder Google Drive', () => window.open(S.rootUrl, '_blank'), ''],
@@ -1168,6 +1210,10 @@ document.addEventListener('keydown', e => {
   } catch (e) { toast('⚠️ Gagal memuat: ' + e.message); }
   const l = document.getElementById('loader'); l && l.remove();
   render();
+  try {
+    if (IS_GAS && google.script.url) google.script.url.getLocation(loc => openFromLink(loc.parameter));
+    else openFromLink(Object.fromEntries(new URLSearchParams(location.search)));
+  } catch (e) {}
   // sinkron realtime: cek versi tiap 15 dtk (lebih jarang saat tab tidak aktif)
   const live = document.getElementById('live');
   setInterval(async () => {
