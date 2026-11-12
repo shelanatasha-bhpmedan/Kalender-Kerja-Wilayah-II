@@ -1,0 +1,59 @@
+name: Deploy ke Apps Script
+
+# Setiap push ke branch utama yang mengubah file aplikasi kalender akan
+# mengirim Code.gs, Index.html, dan appsscript.json ke proyek Apps Script,
+# lalu memperbarui deployment yang sama (URL /exec tidak berubah).
+on:
+  push:
+    branches: [claude/modern-work-calendar-multiuser-1kd1xx]
+    paths: [Code.gs, Index.html, appsscript.json, .github/workflows/deploy-apps-script.yml]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-apps-script
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pasang clasp
+        run: npm install -g @google/clasp@2.4.2
+
+      - name: Cek secrets
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+          DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
+        run: |
+          for v in CLASPRC_JSON SCRIPT_ID DEPLOYMENT_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Secret $v belum diisi. Lihat README bagian Deploy otomatis."; exit 1; fi
+          done
+
+      - name: Siapkan kredensial clasp
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+        run: |
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+          printf '{"scriptId":"%s","rootDir":"."}' "$SCRIPT_ID" > .clasp.json
+
+      - name: Kirim file ke Apps Script
+        run: clasp push --force
+
+      - name: Perbarui deployment (URL tetap)
+        env:
+          DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
+        run: |
+          clasp deploy --deploymentId "$DEPLOYMENT_ID" \
+            --description "GitHub ${GITHUB_SHA::7} — $(git log -1 --pretty=%s | cut -c1-80)"
+
+      - name: Hapus kredensial
+        if: always()
+        run: rm -f ~/.clasprc.json .clasp.json
