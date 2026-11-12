@@ -1210,6 +1210,15 @@ document.addEventListener('keydown', e => {
   } catch (e) { toast('⚠️ Gagal memuat: ' + e.message); }
   const l = document.getElementById('loader'); l && l.remove();
   render();
+  // Pembaruan sekali jalan: tautan Zoom rapat 13 Nov 2026 diganti tautan berpassword.
+  (async () => {
+    const ZOOM = 'https:\/\/us06web.zoom.us/j/3208006444?pwd=d5NxplAXHqHGaOxgPbE3Zl2ebf1r7o.1&omn=85627561232';
+    const e = S.events.find(x => x.id === 'agd-20261113-monitoring-pengampuan-ariel');
+    if (!e || (e.tautan || [])[0] === ZOOM) return;
+    const d = Object.assign({}, e, { tautan: [ZOOM].concat((e.tautan || []).filter(t => !/3208006444/.test(t))),
+      deskripsi: String(e.deskripsi || '').replace(/• Tautan: \S*3208006444\S*/, '• Tautan: ' + ZOOM) });
+    try { const r = await call('apiSaveEvent', d); Object.assign(e, r); render(); } catch (err) { console.warn('patch zoom', err); }
+  })();
   try {
     if (IS_GAS && google.script.url) google.script.url.getLocation(loc => openFromLink(loc.parameter));
     else openFromLink(Object.fromEntries(new URLSearchParams(location.search)));
