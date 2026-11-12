@@ -215,6 +215,13 @@ kbd{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6p
 .detail-hero h3{margin:6px 0;font-size:20px}
 .kv{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;font-size:13px}
 .kv span:nth-child(odd){color:var(--muted)}
+.daypop{position:fixed;z-index:70;width:280px;max-height:320px;overflow:auto;background:#fff;border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:14px;box-shadow:0 12px 32px -12px rgba(27,35,69,.35);padding:8px;display:none;animation:fade .12s}
+.daypop.show{display:block}
+.daypop h5{margin:2px 6px 6px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.daypop button{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:8px;border-radius:10px}
+.daypop button:hover{background:var(--accent-soft)}
+.daypop i{width:4px;align-self:stretch;border-radius:4px;flex:none}
+.daypop b{display:block;font-size:13px;line-height:1.3}.daypop small{color:var(--muted);font-size:11.5px}
 /* palette & toast */
 .palette{position:fixed;inset:0;z-index:95;background:rgba(10,10,30,.4);backdrop-filter:blur(3px);display:none;justify-content:center;padding-top:12vh}
 .palette.show{display:flex}
@@ -355,6 +362,7 @@ svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
 </div>
 
 <div class="hover-card" id="hover"></div>
+<div class="daypop" id="daypop"></div>
 <div class="viewer" id="viewer">
   <header><b id="vTitle"></b><a id="vOpen" target="_blank" class="btn btn-soft" style="background:rgba(255,255,255,.1)">Buka di Drive ↗</a>
     <button class="icon-btn" onclick="closeViewer()">✕</button></header>
@@ -1352,6 +1360,38 @@ document.addEventListener('keydown', e => {
   v.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
   v.addEventListener('touchend', e => { if (x0 === null || S.view === 'board') return; const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
     if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) shift(dx < 0 ? 1 : -1); x0 = null; }, { passive: true }); })();
+
+/* Pratinjau kegiatan saat kursor diarahkan ke tanggal (hanya perangkat dengan mouse). Ringan:
+ * satu elemen dipakai ulang, muncul setelah jeda singkat, hilang saat kursor menjauh. */
+(() => {
+  if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  const pop = document.getElementById('daypop'), view = document.getElementById('view');
+  let tShow = 0, tHide = 0, curK = '';
+  const hide = () => { clearTimeout(tShow); pop.classList.remove('show'); curK = ''; };
+  const laterHide = () => { clearTimeout(tShow); clearTimeout(tHide); tHide = setTimeout(hide, 180); };
+  function show(cell) {
+    const k = cell.dataset.k, ev = eventsOn(k).sort((a, b) => (a.jamMulai || '').localeCompare(b.jamMulai || ''));
+    if (!ev.length) return hide();
+    curK = k;
+    pop.innerHTML = `<h5>${fmtLong(k)} · ${ev.length} kegiatan</h5>` + ev.map(e => `<button onclick="document.getElementById('daypop').classList.remove('show');openDetail('${e.id}')">
+      <i style="background:${color(e)}"></i><span><b>${esc(e.judul)}</b><small>🕒 ${timeStr(e)}${e.lokasi ? ' · 📍 ' + esc(e.lokasi.length > 40 ? e.lokasi.slice(0, 40) + '…' : e.lokasi) : ''}${e.status === 'Selesai' ? ' · ✅' : ''}</small></span></button>`).join('');
+    pop.classList.add('show');
+    const r = cell.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    let x = r.right + 6; if (x + w > innerWidth - 8) x = r.left - w - 6; if (x < 8) x = 8;
+    let y = r.top; if (y + h > innerHeight - 8) y = innerHeight - h - 8;
+    pop.style.left = x + 'px'; pop.style.top = Math.max(8, y) + 'px';
+  }
+  view.addEventListener('mouseover', e => {
+    const cell = e.target.closest('.cell'); if (!cell || S.view !== 'month') return;
+    clearTimeout(tHide); if (cell.dataset.k === curK) return;
+    clearTimeout(tShow); tShow = setTimeout(() => show(cell), 220);
+  });
+  view.addEventListener('mouseout', e => { const c = e.target.closest('.cell'); if (c && !c.contains(e.relatedTarget)) laterHide(); });
+  pop.addEventListener('mouseenter', () => clearTimeout(tHide));
+  pop.addEventListener('mouseleave', laterHide);
+  view.addEventListener('scroll', hide, true); addEventListener('resize', hide);
+  document.addEventListener('dragstart', hide); document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
+})();
 
 /* ============================================================ boot */
 (async function init() {
