@@ -20,9 +20,44 @@ const MAX_UPLOAD_MB = 25;
 
 /* ---------------------------------------------------------------- web app */
 
-function doGet() {
+/* Tampilan (Index.html) diambil langsung dari GitHub, jadi setiap push ke branch utama
+ * aktif sendiri tanpa membuka Apps Script (cache maks. 10 menit).
+ * ?segar=1 → ambil ulang sekarang · ?ui=lokal → pakai file Index di proyek ini. */
+const UI_URL = 'https://raw.githubusercontent.com/shelanatasha-bhpmedan/Kalender-Kerja-Wilayah-II/claude/modern-work-calendar-multiuser-1kd1xx/Index.html';
+
+function ambilUi_(segar) {
+  const cache = CacheService.getScriptCache();
+  if (!segar) {
+    const n = Number(cache.get('ui_n') || 0);
+    if (n) {
+      const parts = cache.getAll(Array.apply(null, Array(n)).map(function (_, i) { return 'ui_' + i; }));
+      const html = Array.apply(null, Array(n)).map(function (_, i) { return parts['ui_' + i] || ''; }).join('');
+      if (html.length > 1000 && Object.keys(parts).length === n) return html;
+    }
+  }
+  const res = UrlFetchApp.fetch(UI_URL + '?t=' + Date.now(), { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) throw new Error('GitHub ' + res.getResponseCode());
+  const html = res.getContentText('UTF-8');
+  if (html.indexOf('<html') < 0) throw new Error('Isi dari GitHub tidak valid');
+  try {
+    const size = 90000, obj = {};
+    let i = 0;
+    for (; i * size < html.length; i++) obj['ui_' + i] = html.slice(i * size, (i + 1) * size);
+    obj.ui_n = String(i);
+    cache.putAll(obj, 600);
+  } catch (e) { /* cache penuh: tetap tampilkan */ }
+  return html;
+}
+
+function doGet(e) {
   ensureSetup_();
-  return HtmlService.createTemplateFromFile('Index').evaluate()
+  const p = (e && e.parameter) || {};
+  let out;
+  if (p.ui !== 'lokal') {
+    try { out = HtmlService.createHtmlOutput(ambilUi_(p.segar === '1')); } catch (err) { console.warn('UI GitHub gagal: ' + err); }
+  }
+  if (!out) out = HtmlService.createTemplateFromFile('Index').evaluate();
+  return out
     .setTitle(APP_NAME)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover')
     .addMetaTag('theme-color', '#1b2345')

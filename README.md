@@ -30,7 +30,10 @@ Tanpa kunci API, AI Dokumen memakai template bawaan per kategori. Untuk analisis
 1. Ambil API key di <https://aistudio.google.com/apikey>.
 2. Di Apps Script, buka **Setelan proyek → Properti skrip**, lalu tambahkan `GEMINI_API_KEY` = kunci Anda. Model bisa diganti lewat properti `GEMINI_MODEL` (default `gemini-2.5-flash`).
 
-## 🔄 Deploy otomatis dari GitHub
+## ⚡ Tampilan otomatis dari GitHub (cara termudah)
+`doGet()` di `Code.gs` mengambil `Index.html` langsung dari GitHub. Setelah `Code.gs` terbaru disalin ke Apps Script dan di-deploy **Versi baru** satu kali, setiap perubahan `Index.html` yang di-push ke branch utama aktif sendiri dalam waktu paling lama 10 menit. Buka `…/exec?segar=1` agar perubahan langsung terlihat, atau `…/exec?ui=lokal` untuk memakai file `Index` di proyek. Bila GitHub tidak bisa dihubungi, aplikasi otomatis memakai file `Index` di proyek. Perubahan pada `Code.gs` tetap perlu disalin manual atau memakai cara di bawah.
+
+## 🔄 Deploy penuh otomatis dari GitHub (opsional, lewat clasp)
 Setelah disiapkan sekali, setiap push yang mengubah `Code.gs`, `Index.html`, atau `appsscript.json` ke branch utama langsung terpasang di Apps Script. URL `/exec` tetap sama, jadi tim tidak perlu link baru. Prosesnya berjalan lewat GitHub Actions (`.github/workflows/deploy-apps-script.yml`) dan butuh waktu sekitar satu menit.
 
 **Persiapan (sekali saja):**
