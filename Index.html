@@ -784,6 +784,133 @@ function openFromLink(p) {
   else if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) { pickDay(d); if (!matchMedia('(max-width:900px)').matches) { S.view = 'agenda'; render(); } }
 }
 
+/* Kegiatan tambahan yang dimasukkan otomatis dari tampilan (sekali saja). Dicek berdasarkan
+ * judul + tanggal agar tidak dobel; setelah dimasukkan, tidak dibuat ulang walau dihapus. */
+const KEGIATAN_TAMBAHAN = [{
+  kunci: 'rakor-hakim-pengawas-rata-makmur-20261111',
+  judul: 'Rapat Koordinasi dengan Hakim Pengawas — Kepailitan PT Rata Makmur (Dalam Pailit)',
+  mulai: '2026-11-11', selesai: '2026-11-11', jamMulai: '10:00', jamSelesai: '12:00', seharian: false,
+  lokasi: 'Pengadilan Niaga pada Pengadilan Negeri Medan, Jl. Pengadilan No. 8 Medan',
+  kategori: 'Koordinasi', prioritas: 'Tinggi', status: 'Selesai', peserta: [], tautan: [],
+  deskripsi: [
+    'Koordinasi Tim Kurator BHP Medan dengan Hakim Pengawas untuk menyampaikan laporan perkembangan pengurusan dan pemberesan harta pailit PT Rata Makmur (Dalam Pailit). Waktu pukul 10.00 WIB sampai selesai.',
+    '',
+    'DASAR',
+    '• UU No. 37 Tahun 2004 tentang Kepailitan dan PKPU',
+    '• Putusan Pengadilan Niaga pada PN Medan No. 33/Pdt.Sus-PKPU/2022/PN Niaga Mdn tanggal 10 April 2023',
+    '• Surat Tugas Kepala BHP Medan No. W.2.AHU.AHU.1-AH.06.06-3687 tanggal 9 November 2026 (Dartimnov M.T Harahap, Joko Prabowo, Hutri Zebua)',
+    '',
+    'PESERTA',
+    '1. Abd. Hadi Nasution, S.H., M.H. — Hakim Pengawas',
+    '2. Syafriadi Lubis — Kepala BHP Medan',
+    '3. Dartimnov M.T Harahap — Kurator Keperdataan Ahli Madya',
+    '4. Elsintha Damayanti — Kepala Seksi HP Wilayah II',
+    '5. Shela Natasha — Kurator Keperdataan Ahli Muda',
+    '6. Hutri Zebua — Kurator Keperdataan Ahli Pertama',
+    '7. Benyamin — pihak yang berminat atas lahan bekas HGU',
+    '',
+    'NOTULA (RINGKASAN BERITA ACARA)',
+    '1. Hakim Pengawas menjelaskan bahwa urusan lahan bekas HGU harus melalui Kurator dan awalnya mengusulkan lahan dimasukkan ke harta pailit, dinilai, lalu dilelang.',
+    '2. Kurator menjelaskan cara itu sudah dicoba tetapi tidak bisa dijalankan. HGU No. 2/Sei Tampa (± 388 ha) sudah berakhir sehingga tidak dapat dinilai penilai. Data perseroan di AHU belum diperbarui sejak 2004, dan akta perubahan yang menunjuk Agam Singarimbun belum didaftarkan.',
+    '3. Kurator menyerahkan Laporan Hakim Pengawas Triwulan III No. W.2.AHU.AHU.1-AH.06.06-3583 tanggal 29 Oktober 2026. Tidak ada harta pailit yang berhasil dibereskan, dan tagihan yang belum terbayar adalah utang pajak KPP Pratama Binjai sebesar Rp1.108.581.903.',
+    '4. Benyamin bertanya apakah lahan bisa dibeli langsung. Hakim Pengawas menjawab jual beli dengan Debitor Pailit tidak bisa dilakukan selama masih pailit, karena harta pailit hanya dapat dialihkan Kurator melalui lelang umum.',
+    '5. Hakim Pengawas menyarankan seluruh sisa utang (pajak KPP Pratama Binjai Rp1.108.581.903) beserta biaya kepailitan dilunasi lebih dahulu oleh Debitor Pailit melalui Agam Singarimbun dengan menyetor ke rekening pailit. Uang itu dicatat sebagai harta pailit lalu dibagikan melalui daftar pembagian yang diumumkan.',
+    '6. Setelah semua utang dan biaya lunas, Kurator mengajukan permohonan pengakhiran kepailitan tanpa likuidasi kepada Majelis Hakim Pemutus melalui Hakim Pengawas, lalu menyurati Kantor Pertanahan untuk mencabut blokir HGU. Pemblokiran oleh Kurator dinilai sudah tepat.',
+    '7. Kurator telah menyiapkan dua permohonan tertanggal 10 November 2026: Pencabutan No. …-3709 (Pasal 18, saldo ± Rp9.600.000 tidak cukup untuk biaya pengumuman ± Rp17.660.000) dan Pengakhiran No. …-3710 (Pasal 202, berakhir demi hukum setelah daftar pembagian penutup mengikat).',
+    '8. Hakim Pengawas lebih condong pada Pasal 202. Pasal 18 dinilai tidak relevan karena sudah pernah ada pembayaran melalui daftar pembagian. Kurator mencatatnya sebagai bahan pertimbangan, khususnya bila utang pajak dibayarkan.',
+    '9. Kurator menyampaikan surat Law Office Tambun & Associates No. 068/1-a/T&A/XI/2026 tanggal 10 November 2026 (kuasa hukum Agam Singarimbun): utang kepada pemohon pailit dan pajak KPP Pratama Medan Polonia sudah lunas, tagihan KPP Pratama Binjai sudah dicicil dua kali sebesar Rp19.626.980 dan akan dicicil minimal sebulan sekali. Jumlah ini perlu dicocokkan dengan sisa tagihan.',
+    '10. Hakim Pengawas menjelaskan bahwa kepailitan yang diakhiri dengan utang belum terbayar berakibat perseroan wajib dilikuidasi sesuai UU PT. Pengakhiran tanpa likuidasi hanya bila seluruh utang lunas.',
+    '11. Likuidasi mengharuskan NPWP dihapus, padahal penghapusan terkendala utang pajak (konflik norma UU PT dan perpajakan). Kurator cukup mengajukan permohonan penghapusan dan melaporkannya dalam pertanggungjawaban paling lambat 30 hari setelah kepailitan berakhir. Kepala BHP dan Hakim Pengawas sependapat.',
+    '12. Jumlah pasti sisa utang dan biaya kepailitan, termasuk biaya pengumuman, akan dihitung ulang oleh Kurator.',
+    '13. Kepastian penyetoran uang harus diperoleh dalam 1 minggu. Bila tidak disetor, kepailitan ditutup tanpa pelunasan, perseroan dilikuidasi, dan tanah bekas HGU kembali dikuasai negara.',
+    '',
+    'BATAS WAKTU: kepastian penyetoran paling lambat Rabu, 18 November 2026.',
+  ].join('\n'),
+  checklist: [
+    { t: 'Surat Tugas No. W.2.AHU.AHU.1-AH.06.06-3687 & SPPD', d: true },
+    { t: 'Serahkan Laporan Hakim Pengawas Triwulan III', d: true },
+    { t: 'Berita Acara Rapat Koordinasi + dokumentasi', d: true },
+    { t: 'Tanda tangan Berita Acara oleh seluruh peserta', d: false },
+    { t: 'Hitung ulang sisa utang & biaya kepailitan (termasuk biaya pengumuman), sampaikan ke pihak Agam Singarimbun', d: false },
+    { t: 'Cocokkan cicilan Rp19.626.980 dengan sisa tagihan KPP Pratama Binjai', d: false },
+    { t: 'Tunggu kepastian setoran ke rekening pailit (paling lambat 18 Nov 2026)', d: false },
+    { t: 'Bila disetor: catat sebagai harta pailit, susun & umumkan daftar pembagian, bayar kreditor', d: false },
+    { t: 'Ajukan pengakhiran kepailitan (Pasal 202) setelah semua utang & biaya lunas, lalu surati Kantor Pertanahan cabut blokir HGU', d: false },
+    { t: 'Bila tidak disetor: koordinasi ulang dengan Hakim Pengawas soal dasar pengakhiran', d: false },
+    { t: 'Laporan hasil tugas kepada Kepala BHP Medan', d: false },
+  ],
+}, {
+  kunci: 'batas-setoran-rata-makmur-20261118',
+  judul: 'Batas Kepastian Setoran ke Rekening Pailit — PT Rata Makmur',
+  mulai: '2026-11-18', selesai: '2026-11-18', jamMulai: '', jamSelesai: '', seharian: true,
+  lokasi: 'BHP Medan', kategori: 'Koordinasi', prioritas: 'Tinggi', status: 'Direncanakan', peserta: [], tautan: [],
+  deskripsi: 'Tindak lanjut Rapat Koordinasi dengan Hakim Pengawas tanggal 11 November 2026.\n\nKepastian penyetoran sisa utang (utang pajak KPP Pratama Binjai Rp1.108.581.903) beserta biaya kepailitan ke rekening pailit oleh pihak Agam Singarimbun paling lambat 1 minggu sejak 11 November 2026.\n\n• Bila disetor: catat sebagai harta pailit, umumkan daftar pembagian, bayar kreditor, lalu ajukan pengakhiran kepailitan berdasarkan Pasal 202.\n• Bila tidak disetor: koordinasi kembali dengan Hakim Pengawas untuk menentukan pasal dasar pengakhiran; perseroan dilikuidasi dan tanah bekas HGU kembali dikuasai negara.',
+  checklist: [{ t: 'Cek mutasi rekening pailit', d: false }, { t: 'Hubungi kuasa hukum Agam Singarimbun (Tambun & Associates)', d: false }, { t: 'Laporkan hasil ke Hakim Pengawas', d: false }],
+}, {
+  kunci: 'konsep-tanggapan-kuasa-hukum-debitor-rata-makmur-20261112',
+  judul: 'Konsep Surat Tanggapan Kurator atas Surat Kuasa Hukum Debitor — PT Rata Makmur (Dalam Pailit)',
+  mulai: '2026-11-12', selesai: '2026-11-12', jamMulai: '', jamSelesai: '', seharian: true,
+  lokasi: 'Kantor BHP Medan', kategori: 'Umum', prioritas: 'Tinggi', status: 'Berjalan', peserta: [], tautan: [],
+  deskripsi: [
+    'Tim Wilayah II menyusun konsep surat tanggapan Kurator atas surat kuasa hukum Debitor Pailit Nomor 068/1-a/T&A/XI/2026 tanggal 10 November 2026 perihal Tanggapan Terhadap Laporan Kurator.',
+    '',
+    'DATA SURAT KELUAR (KONSEP)',
+    '• Nomor: W.2.AHU.AHU.1-AH.06.06-3729',
+    '• Tanggal: 12 November 2026 · Sifat: Penting · Lampiran: -',
+    '• Hal: Tanggapan atas Surat Kuasa Hukum Debitor PT Rata Makmur (Dalam Pailit)',
+    '• Tembusan: Hakim Pengawas Kepailitan PT Rata Makmur (Dalam Pailit) pada Pengadilan Niaga PN Medan; Direktur Perdata Ditjen AHU Kementerian Hukum RI',
+    '',
+    'ISI POKOK TANGGAPAN',
+    'A. Kedudukan hukum Kurator dan Debitor',
+    '• Debitor kehilangan hak mengurus harta sejak putusan pailit (Pasal 24 ayat (1) UU Kepailitan).',
+    '• Pengurusan dan pemberesan sepenuhnya wewenang Kurator (Pasal 16 ayat (1), 26 ayat (1), 69 UU Kepailitan).',
+    '• Perdamaian sudah tertutup (Pasal 292 UU Kepailitan; Putusan MK No. 14/PUU-XXIV/2026).',
+    '• Sita umum berlaku untuk semua kreditor (Pasal 1 angka 1 UU Kepailitan).',
+    '',
+    'B. Tanggapan atas pokok surat (angka 1–9)',
+    '• Yang lunas hanya tagihan upah eks pekerja (Rp133.650.000, Daftar Pembagian Tahap I, disetujui Hakim Pengawas 20 Mei 2025); tagihan pajak belum lunas.',
+    '• Kantor pajak adalah kreditor preferen, bukan konkuren (Pasal 21 ayat (1) dan (3a) UU KUP; Daftar Piutang Tetap 22 Juni 2023).',
+    '• Pembayaran ke KPP Pratama Medan Polonia (Rp14.636.635) dan cicilan KPP Pratama Binjai (Rp19.626.980) dilakukan di luar Kurator tanpa kewenangan, tidak mengikat Kurator, dan asal dananya wajib dipertanggungjawabkan.',
+    '• Kurator tidak berwenang memberi izin mencicil dan wajib independen (Pasal 15 ayat (3)); hasil rapat 14 September 2026 sudah dilaporkan dalam Laporan Triwulan III No. …-3583.',
+    '• Ada pertentangan tanggal dalam surat (cicilan pertama 12 Oktober 2025 vs. alasan "lama tidak menerima informasi" sejak rapat 14 September 2026).',
+    '• Harta pailit insolvensi sejak 22 Juni 2023 (Pasal 178 ayat (1)); sisa tagihan KPP Pratama Binjai Rp1.108.581.903, cicilan baru ± 1,8%.',
+    '• Kesediaan mencicil tanpa jumlah, jadwal, dan batas waktu tidak dapat diterima; pada hakikatnya tawaran perdamaian yang sudah tertutup.',
+    '',
+    'C. Akibat hukum selama utang pajak belum lunas',
+    '• Perikatan Debitor setelah pailit tidak mengikat harta pailit (Pasal 25).',
+    '• HGU No. 2/Sei Tampa hapus sejak 31 Agustus 2013 (Pasal 34 huruf a UUPA); hasil kebun selama kepailitan adalah harta pailit (Pasal 21).',
+    '• Tanggung jawab pribadi direksi (Pasal 104 ayat (2) UU PT).',
+    '• Rehabilitasi tidak dapat dikabulkan (Pasal 216).',
+    '• Kewajiban pengurus menghadap dengan ancaman penahanan (Pasal 110, 111, 93).',
+    '',
+    'D. Tindak lanjut yang wajib dipenuhi pihak Debitor',
+    '1. Hentikan seketika setiap pembayaran langsung kepada kreditor dan tindakan lain atas harta pailit di luar Kurator.',
+    '2. Serahkan bukti setor asli atas pembayaran di luar Kurator beserta penjelasan tertulis asal dana (Pasal 74 ayat (1), 189 ayat (2)).',
+    '3. Lunasi seluruh sisa utang pajak dengan menyetor ke rekening kepailitan.',
+    '4. Kurator hanya memperhitungkan dana yang nyata masuk ke rekening kepailitan.',
+  ].join('\n'),
+  checklist: [
+    { t: 'Pelajari surat kuasa hukum Debitor No. 068/1-a/T&A/XI/2026', d: true },
+    { t: 'Susun konsep surat tanggapan Kurator', d: true },
+    { t: 'Cek kutipan pasal, angka, dan tanggal dalam konsep', d: false },
+    { t: 'Koreksi Kepala Seksi', d: false },
+    { t: 'Paraf & tanda tangan Kepala BHP Medan', d: false },
+    { t: 'Agenda & nomori surat keluar (…-3729)', d: false },
+    { t: 'Kirim ke kuasa hukum Debitor + tembusan Hakim Pengawas dan Direktur Perdata Ditjen AHU', d: false },
+    { t: 'Arsipkan surat masuk & surat keluar di Lampiran kegiatan ini', d: false },
+  ],
+}];
+async function tambahKegiatan() {
+  let done = []; try { done = JSON.parse(localStorage.getItem('kkw2-tambahan') || '[]'); } catch (e) {}
+  for (const k of KEGIATAN_TAMBAHAN) {
+    if (done.includes(k.kunci)) continue;
+    const ada = S.events.some(e => e.mulai === k.mulai && e.judul === k.judul);
+    if (!ada) { try { const { kunci, ...data } = k; S.events.push(await call('apiSaveEvent', data)); } catch (err) { console.warn('tambah', err); continue; } }
+    done.push(k.kunci); try { localStorage.setItem('kkw2-tambahan', JSON.stringify(done)); } catch (e) {}
+  }
+  render();
+}
+
 function goToday() { S.cursor = new Date(); S.sel = todayKey(); render(); }
 function pickDay(k) { S.cursor = parse(k); S.sel = k; if (S.view !== 'week') S.view = S.view === 'month' ? 'month' : S.view; document.getElementById('side').classList.remove('open'); render(); }
 function toggleCat(n) { S.hidden.has(n) ? S.hidden.delete(n) : S.hidden.add(n); localStorage.setItem('kkw2-hidden', JSON.stringify([...S.hidden])); render(); }
@@ -1229,6 +1356,7 @@ document.addEventListener('keydown', e => {
   } catch (e) { toast('⚠️ Gagal memuat: ' + e.message); }
   const l = document.getElementById('loader'); l && l.remove();
   render();
+  tambahKegiatan();
   // Pembaruan sekali jalan: tautan Zoom rapat 13 Nov 2026 diganti tautan berpassword.
   (async () => {
     const ZOOM = 'https:\/\/us06web.zoom.us/j/3208006444?pwd=d5NxplAXHqHGaOxgPbE3Zl2ebf1r7o.1&omn=85627561232';
