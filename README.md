@@ -30,6 +30,26 @@ Tanpa kunci API, AI Dokumen memakai template bawaan per kategori. Untuk analisis
 1. Ambil API key di <https://aistudio.google.com/apikey>.
 2. Di Apps Script, buka **Setelan proyek → Properti skrip**, lalu tambahkan `GEMINI_API_KEY` = kunci Anda. Model bisa diganti lewat properti `GEMINI_MODEL` (default `gemini-2.5-flash`).
 
+## ⚡ Tampilan otomatis dari GitHub (cara termudah)
+`doGet()` di `Code.gs` mengambil `Index.html` langsung dari GitHub. Setelah `Code.gs` terbaru disalin ke Apps Script dan di-deploy **Versi baru** satu kali, setiap perubahan `Index.html` yang di-push ke branch utama aktif sendiri dalam waktu paling lama 10 menit. Buka `…/exec?segar=1` agar perubahan langsung terlihat, atau `…/exec?ui=lokal` untuk memakai file `Index` di proyek. Bila GitHub tidak bisa dihubungi, aplikasi otomatis memakai file `Index` di proyek. Perubahan pada `Code.gs` tetap perlu disalin manual atau memakai cara di bawah.
+
+## 🔄 Deploy penuh otomatis dari GitHub (opsional, lewat clasp)
+Setelah disiapkan sekali, setiap push yang mengubah `Code.gs`, `Index.html`, atau `appsscript.json` ke branch utama langsung terpasang di Apps Script. URL `/exec` tetap sama, jadi tim tidak perlu link baru. Prosesnya berjalan lewat GitHub Actions (`.github/workflows/deploy-apps-script.yml`) dan butuh waktu sekitar satu menit.
+
+**Persiapan (sekali saja):**
+1. Buka <https://script.google.com/home/usersettings>, lalu aktifkan **Google Apps Script API**.
+2. Di komputer yang punya Node.js, jalankan `npm install -g @google/clasp@2.4.2` lalu `clasp login` dengan akun Google pemilik proyek. Setelah login, akan ada file `~/.clasprc.json` (di Windows: `C:\Users\<nama>\.clasprc.json`).
+3. Ambil dua ID dari proyek Apps Script:
+   - **Script ID**: menu ⚙️ **Setelan proyek → ID Skrip**.
+   - **Deployment ID**: menu **Terapkan → Kelola deployment**, lalu salin **ID Deployment** dari deployment aplikasi web yang sedang dipakai tim.
+4. Di GitHub, buka **Settings → Secrets and variables → Actions → New repository secret**, lalu buat tiga secret berikut:
+   - `CLASPRC_JSON`: seluruh isi file `.clasprc.json`.
+   - `SCRIPT_ID`: Script ID dari langkah 3.
+   - `DEPLOYMENT_ID`: Deployment ID dari langkah 3.
+5. Buka tab **Actions → Deploy ke Apps Script → Run workflow** untuk uji coba pertama.
+
+> File `.clasprc.json` berisi akses ke akun Google Anda. Simpan hanya sebagai secret GitHub dan jangan pernah di-commit ke repo.
+
 ## 🧪 Coba tanpa deploy
 Buka `Index.html` langsung di browser. Aplikasi otomatis masuk **mode demo** (data disimpan di localStorage).
 
