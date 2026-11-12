@@ -60,7 +60,6 @@ function doGet(e) {
   return out
     .setTitle(APP_NAME)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover')
-    .addMetaTag('theme-color', '#1b2345')
     .addMetaTag('apple-mobile-web-app-capable', 'yes')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
