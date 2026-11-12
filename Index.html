@@ -384,13 +384,13 @@ const AGENDA_BAWAAN = [{
   mulai: '2026-11-13', selesai: '2026-11-13', jamMulai: '10:00', jamSelesai: '12:00', seharian: false,
   lokasi: 'Daring — Zoom Meeting (ID 320 800 6444, kata sandi: bhpmedan)',
   kategori: 'Pengampuan', prioritas: 'Tinggi', status: 'Direncanakan', peserta: [],
-  tautan: ['https:\/\/us06web.zoom.us/j/3208006444'],
+  tautan: ['https:\/\/us06web.zoom.us/j/3208006444?pwd=d5NxplAXHqHGaOxgPbE3Zl2ebf1r7o.1&omn=85627561232'],
   deskripsi: [
     'Acara: Penyampaian hasil musyawarah keluarga.',
     'Rapat ini menindaklanjuti Rapat Monitoring Pengampuan tanggal 9 November 2026. Waktu dimulai pukul 10.00 WIB sampai selesai.',
     '',
     'ZOOM MEETING',
-    '• Tautan: https:\/\/us06web.zoom.us/j/3208006444',
+    '• Tautan: https:\/\/us06web.zoom.us/j/3208006444?pwd=d5NxplAXHqHGaOxgPbE3Zl2ebf1r7o.1&omn=85627561232',
     '• ID Rapat: 320 800 6444',
     '• Kata sandi: bhpmedan',
     '',
@@ -444,12 +444,13 @@ const Demo = (() => {
     ] };
   }
   AGENDA_BAWAAN.forEach(a => { if (!db.events.some(e => e.id === a.id)) { db.events.push(Object.assign({}, a, { dibuatOleh: 'sistem', dibuatPada: new Date().toISOString(), diubahOleh: 'sistem', diubahPada: new Date().toISOString() })); save(); } });
-  const alive = () => db.events.filter(e => !e.dihapus);
+  const alive = () => JSON.parse(JSON.stringify(db.events.filter(e => !e.dihapus))); // salinan, seperti data dari server
   return {
     apiBootstrap: () => ({ events: alive(), files: db.files.filter(f => !f.dihapus), comments: db.comments, version: db.version, user: me, rootUrl: '#', sheetUrl: '#', maxUploadMb: 5 }),
     apiData: () => ({ events: alive(), files: db.files.filter(f => !f.dihapus), comments: db.comments, version: db.version }),
     apiVersion: () => db.version,
     apiSaveEvent(inp) {
+      inp = JSON.parse(JSON.stringify(inp));
       if (!inp.judul) throw new Error('Judul kegiatan wajib diisi');
       const t = new Date().toISOString();
       if (inp.id) { const e = db.events.find(x => x.id === inp.id); Object.assign(e, inp, { diubahOleh: me, diubahPada: t }); log('UBAH', e, ''); save(); return e; }
@@ -661,7 +662,8 @@ function renderTodo(v) {
         <button class="icon-btn" title="Buat dokumen dengan AI" onclick="openDetail('${x.e.id}','ai')">✨</button></div>`).join('') : ''; }).join('')
       || '<div class="empty"><b>🎉</b>Tidak ada tugas di sini.</div>'}</div></div>`;
 }
-async function todoToggle(id, i) { const e = S.events.find(x => x.id === id); e.checklist[i].d = !e.checklist[i].d; render(); try { await call('apiToggleChecklist', id, i); refresh(true); } catch (err) { toast('⚠️ ' + err.message); refresh(true); } }
+function todoToggle(id, i) { const e = S.events.find(x => x.id === id); if (!e) return; e.checklist[i].d = !e.checklist[i].d; render(); ckPending++;
+  ckQueue = ckQueue.then(() => call('apiToggleChecklist', id, i)).then(ckDone, err => { e.checklist[i].d = !e.checklist[i].d; render(); toast('⚠️ ' + err.message); ckDone(); }); }
 function openTodoAdd() {
   const evs = S.events.filter(e => e.selesai >= addDays(todayKey(), -30)).sort((a, b) => a.mulai.localeCompare(b.mulai));
   if (!evs.length) return toast('Buat kegiatan dulu, lalu tambahkan tugasnya');
@@ -1067,7 +1069,24 @@ function gcalLink(e) {
   const dates = e.seharian || !e.jamMulai ? d(e.mulai) + '/' + d(addDays(e.selesai, 1)) : d(e.mulai, e.jamMulai) + '/' + d(e.selesai, e.jamSelesai || e.jamMulai);
   return 'https:\/\/calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(e.judul) + '&dates=' + dates + '&ctz=Asia/Jakarta&details=' + encodeURIComponent(e.deskripsi || '') + '&location=' + encodeURIComponent(e.lokasi || '');
 }
-async function toggleCk(id, i) { await call('apiToggleChecklist', id, i); await refresh(true); openDetail(id); }
+/* Centang checklist terasa instan: tampilan diubah langsung, penyimpanan berjalan di belakang
+ * (berurutan agar klik cepat beruntun tetap konsisten). Bila gagal, centang dikembalikan. */
+let ckQueue = Promise.resolve(), ckPending = 0;
+const ckDone = () => { if (--ckPending === 0) refresh(true).catch(() => {}); };
+function ckPaint(id) {
+  const e = S.events.find(x => x.id === id), body = document.getElementById('dbody'); if (!e || !body) return;
+  const ck = e.checklist || [], done = ck.filter(x => x.d).length;
+  body.querySelectorAll('label.chk').forEach((l, n) => { if (!ck[n]) return; l.classList.toggle('done', !!ck[n].d); const b = l.querySelector('input'); if (b) b.checked = !!ck[n].d; });
+  const bar = body.querySelector('.prog i'); if (bar) bar.style.width = (ck.length ? done / ck.length * 100 : 0) + '%';
+  const h = [...body.querySelectorAll('.panel h3')].find(x => /^Checklist/.test(x.textContent)); if (h) h.textContent = `Checklist · ${done}/${ck.length}`;
+}
+function toggleCk(id, i) {
+  const e = S.events.find(x => x.id === id); if (!e || !e.checklist[i]) return;
+  e.checklist[i].d = !e.checklist[i].d; ckPaint(id); ckPending++;
+  ckQueue = ckQueue.then(() => call('apiToggleChecklist', id, i)).then(ckDone, err => {
+    e.checklist[i].d = !e.checklist[i].d; ckPaint(id); toast('⚠️ Gagal menyimpan centang: ' + err.message); ckDone();
+  });
+}
 async function setStatus(id, s) { const e = S.events.find(x => x.id === id); await call('apiSaveEvent', Object.assign({}, e, { status: s })); toast('Status → ' + s); await refresh(true); openDetail(id); }
 async function dup(id) { const k = prompt('Duplikat ke tanggal (YYYY-MM-DD):', addDays(current.mulai, 7)); if (!k || !/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
   const e = await call('apiDuplicateEvent', id, k); toast('⧉ Diduplikat ke ' + fmtLong(k)); await refresh(true); openDetail(e.id); }
