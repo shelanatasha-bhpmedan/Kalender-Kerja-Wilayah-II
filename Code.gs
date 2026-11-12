@@ -298,6 +298,57 @@ function apiSaveEvent(input) {
   });
 }
 
+
+/* ---------------------------------------------------------------- link pendek Bitly otomatis
+ * Isi Properti skrip BITLY_TOKEN (token API Bitly). Setelah itu:
+ *  • bit.ly/KalenderKerjaWilayah2 dibuat/diarahkan otomatis ke URL /exec aplikasi ini;
+ *  • setiap kali kegiatan/tanggal dibagikan, aplikasi membuat link bit.ly khusus yang langsung
+ *    membuka kegiatan (?ev=) atau tanggal (?d=) tersebut.
+ * Tanpa token, aplikasi memakai URL /exec biasa. */
+const BITLY_KEYWORD = 'KalenderKerjaWilayah2';
+
+function bitly_(method, path, body) {
+  const token = PROP.getProperty('BITLY_TOKEN');
+  if (!token) return null;
+  const res = UrlFetchApp.fetch('https://api-ssl.bitly.com/v4' + path, {
+    method: method, contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + token }, payload: body ? JSON.stringify(body) : undefined,
+  });
+  const code = res.getResponseCode();
+  let data = {};
+  try { data = JSON.parse(res.getContentText() || '{}'); } catch (e) {}
+  return { ok: code >= 200 && code < 300, code: code, data: data };
+}
+
+function appUrl_() { return ScriptApp.getService().getUrl().replace(/\/dev$/, '/exec'); }
+
+function ensureBaseLink_() {
+  const exec = appUrl_();
+  if (PROP.getProperty('BITLY_BASE_FOR') === exec) return;
+  const s = bitly_('post', '/shorten', { long_url: exec, domain: 'bit.ly' });
+  if (!s || !s.ok) return;
+  const custom = 'bit.ly/' + BITLY_KEYWORD;
+  let r = bitly_('post', '/custom_bitlinks', { custom_bitlink: custom, bitlink_id: s.data.id });
+  if (!r.ok) r = bitly_('patch', '/custom_bitlinks/' + custom, { bitlink_id: s.data.id });
+  if (r.ok) PROP.setProperty('BITLY_BASE_FOR', exec);
+  else console.warn('Bitly custom link gagal: ' + r.code + ' ' + JSON.stringify(r.data));
+}
+
+/** Link untuk dibagikan. kind: 'ev' (id kegiatan) atau 'd' (tanggal YYYY-MM-DD). */
+function apiShareLink(kind, value) {
+  if (['ev', 'd'].indexOf(kind) < 0) throw new Error('Jenis link tidak dikenal');
+  const long = appUrl_() + '?' + kind + '=' + encodeURIComponent(value);
+  if (!PROP.getProperty('BITLY_TOKEN')) return { url: long, bitly: false };
+  try { ensureBaseLink_(); } catch (e) { console.warn('ensureBaseLink_: ' + e); }
+  const key = 'BL_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, long)).slice(0, 16);
+  const cached = PROP.getProperty(key);
+  if (cached) return { url: cached, bitly: true };
+  const s = bitly_('post', '/shorten', { long_url: long, domain: 'bit.ly' });
+  if (!s || !s.ok) return { url: long, bitly: false, error: s ? s.code : 'no-token' };
+  PROP.setProperty(key, s.data.link);
+  return { url: s.data.link, bitly: true };
+}
+
 /** Pindah tanggal cepat (drag & drop). */
 function apiMoveEvent(id, mulai) {
   return withLock_(function () {
