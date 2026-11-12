@@ -847,17 +847,20 @@ const KEGIATAN_TAMBAHAN = [{
   deskripsi: 'Tindak lanjut Rapat Koordinasi dengan Hakim Pengawas tanggal 11 November 2026.\n\nKepastian penyetoran sisa utang (utang pajak KPP Pratama Binjai Rp1.108.581.903) beserta biaya kepailitan ke rekening pailit oleh pihak Agam Singarimbun paling lambat 1 minggu sejak 11 November 2026.\n\n• Bila disetor: catat sebagai harta pailit, umumkan daftar pembagian, bayar kreditor, lalu ajukan pengakhiran kepailitan berdasarkan Pasal 202.\n• Bila tidak disetor: koordinasi kembali dengan Hakim Pengawas untuk menentukan pasal dasar pengakhiran; perseroan dilikuidasi dan tanah bekas HGU kembali dikuasai negara.',
   checklist: [{ t: 'Cek mutasi rekening pailit', d: false }, { t: 'Hubungi kuasa hukum Agam Singarimbun (Tambun & Associates)', d: false }, { t: 'Laporkan hasil ke Hakim Pengawas', d: false }],
 }, {
-  kunci: 'konsep-tanggapan-kuasa-hukum-debitor-rata-makmur-20261112',
-  judul: 'Konsep Surat Tanggapan Kurator atas Surat Kuasa Hukum Debitor — PT Rata Makmur (Dalam Pailit)',
+  kunci: 'konsep-tanggapan-kuasa-hukum-debitor-rata-makmur-20261112', rev: 2,
+  judulLama: ['Konsep Surat Tanggapan Kurator atas Surat Kuasa Hukum Debitor — PT Rata Makmur (Dalam Pailit)'],
+  judul: 'Konsep Surat Tanggapan Kurator atas Surat Kuasa Hukum Agam Singarimbun — PT Rata Makmur (Dalam Pailit)',
   mulai: '2026-11-12', selesai: '2026-11-12', jamMulai: '', jamSelesai: '', seharian: true,
   lokasi: 'Kantor BHP Medan', kategori: 'Umum', prioritas: 'Tinggi', status: 'Berjalan', peserta: [], tautan: [],
   deskripsi: [
-    'Tim Wilayah II menyusun konsep surat tanggapan Kurator atas surat kuasa hukum Debitor Pailit Nomor 068/1-a/T&A/XI/2026 tanggal 10 November 2026 perihal Tanggapan Terhadap Laporan Kurator.',
+    'Tim Wilayah II menyusun konsep surat tanggapan Kurator atas surat Law Office Tambun & Associates (Frien Jones I.H. Tambun, S.H., M.H. dan Kesia Yohana Purba, S.H.) selaku kuasa hukum Agam Singarimbun, Nomor 068/1-a/T&A/XI/2026 tanggal 10 November 2026 perihal Tanggapan Terhadap Laporan Kurator.',
     '',
     'DATA SURAT KELUAR (KONSEP)',
     '• Nomor: W.2.AHU.AHU.1-AH.06.06-3729',
     '• Tanggal: 12 November 2026 · Sifat: Penting · Lampiran: -',
-    '• Hal: Tanggapan atas Surat Kuasa Hukum Debitor PT Rata Makmur (Dalam Pailit)',
+    '• Hal: Tanggapan atas Surat Kuasa Hukum Agam Singarimbun',
+    '• Kepada: Frien Jones I.H. Tambun, S.H., M.H. dan Kesia Yohana Purba, S.H., Kuasa Hukum Agam Singarimbun pada Law Office Tambun & Associates, Jl. Menteng VII No. 77, Medan Denai',
+    '• Penanda tangan: Kepala BHP Medan, Syafriadi Lubis',
     '• Tembusan: Hakim Pengawas Kepailitan PT Rata Makmur (Dalam Pailit) pada Pengadilan Niaga PN Medan; Direktur Perdata Ditjen AHU Kementerian Hukum RI',
     '',
     'ISI POKOK TANGGAPAN',
@@ -870,7 +873,7 @@ const KEGIATAN_TAMBAHAN = [{
     'B. Tanggapan atas pokok surat (angka 1–9)',
     '• Yang lunas hanya tagihan upah eks pekerja (Rp133.650.000, Daftar Pembagian Tahap I, disetujui Hakim Pengawas 20 Mei 2025); tagihan pajak belum lunas.',
     '• Kantor pajak adalah kreditor preferen, bukan konkuren (Pasal 21 ayat (1) dan (3a) UU KUP; Daftar Piutang Tetap 22 Juni 2023).',
-    '• Pembayaran ke KPP Pratama Medan Polonia (Rp14.636.635) dan cicilan KPP Pratama Binjai (Rp19.626.980) dilakukan di luar Kurator tanpa kewenangan, tidak mengikat Kurator, dan asal dananya wajib dipertanggungjawabkan.',
+    '• Cicilan dibayar melalui Jimmy Leonid Lukas Antonius Singarimbun. Pembayaran ke KPP Pratama Medan Polonia (Rp14.636.635) dan cicilan KPP Pratama Binjai (Rp19.626.980) dilakukan di luar Kurator tanpa kewenangan, tidak mengikat Kurator, dan asal dananya wajib dipertanggungjawabkan.',
     '• Kurator tidak berwenang memberi izin mencicil dan wajib independen (Pasal 15 ayat (3)); hasil rapat 14 September 2026 sudah dilaporkan dalam Laporan Triwulan III No. …-3583.',
     '• Ada pertentangan tanggal dalam surat (cicilan pertama 12 Oktober 2025 vs. alasan "lama tidak menerima informasi" sejak rapat 14 September 2026).',
     '• Harta pailit insolvensi sejak 22 Juni 2023 (Pasal 178 ayat (1)); sisa tagihan KPP Pratama Binjai Rp1.108.581.903, cicilan baru ± 1,8%.',
@@ -881,32 +884,41 @@ const KEGIATAN_TAMBAHAN = [{
     '• HGU No. 2/Sei Tampa hapus sejak 31 Agustus 2013 (Pasal 34 huruf a UUPA); hasil kebun selama kepailitan adalah harta pailit (Pasal 21).',
     '• Tanggung jawab pribadi direksi (Pasal 104 ayat (2) UU PT).',
     '• Rehabilitasi tidak dapat dikabulkan (Pasal 216).',
-    '• Kewajiban pengurus menghadap dengan ancaman penahanan (Pasal 110, 111, 93).',
+    '• Kewajiban pengurus menghadap dengan ancaman penahanan (Pasal 110, 111, 93); Agam Singarimbun selaku pengurus tidak hadir atas tiga panggilan Kurator (9 April, 21 April, dan 30 Juni 2026).',
     '',
-    'D. Tindak lanjut yang wajib dipenuhi pihak Debitor',
+    'D. Tindak lanjut yang wajib dipenuhi pihak Debitor (Agam Singarimbun)',
     '1. Hentikan seketika setiap pembayaran langsung kepada kreditor dan tindakan lain atas harta pailit di luar Kurator.',
     '2. Serahkan bukti setor asli atas pembayaran di luar Kurator beserta penjelasan tertulis asal dana (Pasal 74 ayat (1), 189 ayat (2)).',
     '3. Lunasi seluruh sisa utang pajak dengan menyetor ke rekening kepailitan.',
     '4. Kurator hanya memperhitungkan dana yang nyata masuk ke rekening kepailitan.',
   ].join('\n'),
   checklist: [
-    { t: 'Pelajari surat kuasa hukum Debitor No. 068/1-a/T&A/XI/2026', d: true },
+    { t: 'Pelajari surat Law Office Tambun & Associates No. 068/1-a/T&A/XI/2026', d: true },
     { t: 'Susun konsep surat tanggapan Kurator', d: true },
     { t: 'Cek kutipan pasal, angka, dan tanggal dalam konsep', d: false },
     { t: 'Koreksi Kepala Seksi', d: false },
     { t: 'Paraf & tanda tangan Kepala BHP Medan', d: false },
     { t: 'Agenda & nomori surat keluar (…-3729)', d: false },
-    { t: 'Kirim ke kuasa hukum Debitor + tembusan Hakim Pengawas dan Direktur Perdata Ditjen AHU', d: false },
+    { t: 'Kirim ke Law Office Tambun & Associates + tembusan Hakim Pengawas dan Direktur Perdata Ditjen AHU', d: false },
     { t: 'Arsipkan surat masuk & surat keluar di Lampiran kegiatan ini', d: false },
   ],
 }];
 async function tambahKegiatan() {
   let done = []; try { done = JSON.parse(localStorage.getItem('kkw2-tambahan') || '[]'); } catch (e) {}
   for (const k of KEGIATAN_TAMBAHAN) {
-    if (done.includes(k.kunci)) continue;
-    const ada = S.events.some(e => e.mulai === k.mulai && e.judul === k.judul);
-    if (!ada) { try { const { kunci, ...data } = k; S.events.push(await call('apiSaveEvent', data)); } catch (err) { console.warn('tambah', err); continue; } }
-    done.push(k.kunci); try { localStorage.setItem('kkw2-tambahan', JSON.stringify(done)); } catch (e) {}
+    const tanda = k.rev ? k.kunci + '@' + k.rev : k.kunci;
+    if (done.includes(tanda)) continue;
+    const { kunci, rev, judulLama, ...data } = k;
+    const ada = S.events.find(e => e.mulai === k.mulai && [k.judul].concat(judulLama || []).includes(e.judul));
+    try {
+      if (!ada) S.events.push(await call('apiSaveEvent', data));
+      else if (k.rev && (ada.judul !== k.judul || ada.deskripsi !== k.deskripsi)) {
+        // revisi isi: judul, keterangan, dan teks checklist diperbarui; status centang yang sudah ada dipertahankan
+        const ck = data.checklist.map((c, i) => ({ t: c.t, d: (ada.checklist || [])[i] ? !!ada.checklist[i].d || c.d : c.d }));
+        Object.assign(ada, await call('apiSaveEvent', Object.assign({}, ada, { judul: k.judul, deskripsi: k.deskripsi, checklist: ck })));
+      }
+    } catch (err) { console.warn('tambah', err); continue; }
+    done.push(tanda); try { localStorage.setItem('kkw2-tambahan', JSON.stringify(done)); } catch (e) {}
   }
   render();
 }
