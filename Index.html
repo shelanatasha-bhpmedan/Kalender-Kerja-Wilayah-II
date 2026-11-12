@@ -384,13 +384,13 @@ const AGENDA_BAWAAN = [{
   mulai: '2026-11-13', selesai: '2026-11-13', jamMulai: '10:00', jamSelesai: '12:00', seharian: false,
   lokasi: 'Daring — Zoom Meeting (ID 320 800 6444, kata sandi: bhpmedan)',
   kategori: 'Pengampuan', prioritas: 'Tinggi', status: 'Direncanakan', peserta: [],
-  tautan: ['https://us06web.zoom.us/j/3208006444'],
+  tautan: ['https:\/\/us06web.zoom.us/j/3208006444'],
   deskripsi: [
     'Acara: Penyampaian hasil musyawarah keluarga.',
     'Rapat ini menindaklanjuti Rapat Monitoring Pengampuan tanggal 9 November 2026. Waktu dimulai pukul 10.00 WIB sampai selesai.',
     '',
     'ZOOM MEETING',
-    '• Tautan: https://us06web.zoom.us/j/3208006444',
+    '• Tautan: https:\/\/us06web.zoom.us/j/3208006444',
     '• ID Rapat: 320 800 6444',
     '• Kata sandi: bhpmedan',
     '',
@@ -744,7 +744,7 @@ function shift(n) { const c = S.cursor; S.view === 'week' ? c.setDate(c.getDate(
 /* ============================================================ berbagi (link pendek bit.ly)
  * Memakai link bit.ly kalender yang sudah ada (tidak membuat link baru). Bitly meneruskan parameter ?ev= / ?d=,
  * sehingga penerima langsung dibawa ke kegiatan atau tanggal yang dibagikan. */
-const SHARE_BASE = 'https://bit.ly/kalenderkerjawilayah2';
+const SHARE_BASE = 'https:\/\/bit.ly/kalenderkerjawilayah2';
 function shareLink(p) { return SHARE_BASE + '?' + Object.entries(p).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&'); }
 function shareText(e) {
   return [`📅 *${e.judul}*`, `🗓️ ${HR_FULL[parse(e.mulai).getDay()]}, ${fmtLong(e.mulai).replace(/^\w+, /, '')}${e.selesai !== e.mulai ? ' s.d. ' + fmtLong(e.selesai) : ''}`,
@@ -766,7 +766,7 @@ function shareSheet(judul, teks) {
   <div class="mb"><div class="f"><textarea id="shareTxt" style="min-height:220px">${esc(teks)}</textarea></div>
   <small style="color:var(--muted)">Link <b>bit.ly/kalenderkerjawilayah2</b> langsung membuka kegiatan atau tanggal ini.</small></div>
   <div class="mf"><button class="btn btn-primary" onclick="copyShare()">📋 Salin</button>
-  <button class="btn btn-soft" onclick="window.open('https://wa.me/?text='+encodeURIComponent(document.getElementById('shareTxt').value),'_blank')">💬 Kirim via WhatsApp</button>
+  <button class="btn btn-soft" onclick="window.open('https:\/\/wa.me/?text='+encodeURIComponent(document.getElementById('shareTxt').value),'_blank')">💬 Kirim via WhatsApp</button>
   ${navigator.share ? '<button class="btn btn-soft" onclick="navigator.share({text:document.getElementById(\'shareTxt\').value}).catch(()=>{})">📤 Bagikan…</button>' : ''}</div>`);
 }
 function copyShare() {
@@ -869,7 +869,7 @@ function openForm(id, k) {
       <div class="f"><label>Status</label>${pills('status', STAT, STAT_C)}</div>
       <div class="f full"><label>Deskripsi / catatan</label><textarea name="deskripsi" placeholder="Tujuan, agenda, hasil yang diharapkan…">${esc(e.deskripsi)}</textarea></div>
       <div class="f full"><label>Peserta (email Google, pisahkan koma)</label><input name="peserta" value="${esc((e.peserta || []).join(', '))}" placeholder="nama@gmail.com, rekan@gmail.com"></div>
-      <div class="f full"><label>Tautan terkait (satu per baris)</label><textarea name="tautan" style="min-height:60px" placeholder="https://meet.google.com/...">${esc((e.tautan || []).join('\n'))}</textarea></div>
+      <div class="f full"><label>Tautan terkait (satu per baris)</label><textarea name="tautan" style="min-height:60px" placeholder="https:\/\/meet.google.com/...">${esc((e.tautan || []).join('\n'))}</textarea></div>
       <div class="f full"><label>Checklist tugas</label><div id="cklist"></div>
         <button type="button" class="btn btn-ghost" onclick="addCk()">+ Tambah item</button></div>
     </div>
@@ -944,12 +944,12 @@ function openDetail(id, tab) {
       <h3>${esc(e.judul)}</h3><div>📅 ${fmtLong(e.mulai)}${e.selesai !== e.mulai ? ' — ' + fmtLong(e.selesai) : ''} · 🕒 ${timeStr(e)}</div>
       <div style="margin-top:4px">${countdown(e)}</div></div>
     <div class="kv">
-      ${e.lokasi ? `<span>Lokasi</span><span>📍 <a href="https://maps.google.com/?q=${encodeURIComponent(e.lokasi)}" target="_blank">${esc(e.lokasi)}</a></span>` : ''}
+      ${e.lokasi ? `<span>Lokasi</span><span>📍 <a href="https:\/\/maps.google.com/?q=${encodeURIComponent(e.lokasi)}" target="_blank">${esc(e.lokasi)}</a></span>` : ''}
       <span>Prioritas</span><span><span class="tag" style="background:${soft(PRI[e.prioritas] || '#888')};color:${PRI[e.prioritas]}">${esc(e.prioritas)}</span></span>
       <span>Dibuat oleh</span><span style="display:flex;gap:8px;align-items:center">${avatar(e.dibuatOleh, true)} ${esc(e.dibuatOleh)} · ${ago(e.dibuatPada)}</span>
       <span>Terakhir diubah</span><span>${esc(e.diubahOleh)} · ${ago(e.diubahPada)}</span>
       ${(e.peserta || []).length ? `<span>Peserta</span><span style="display:flex;gap:4px;flex-wrap:wrap">${e.peserta.map(p => avatar(p, true)).join('')}</span>` : ''}
-      ${(e.tautan || []).length ? `<span>Tautan</span><span>${e.tautan.map(u => `<a href="${esc(/^https?:/.test(u) ? u : 'https://' + u)}" target="_blank">${esc(u)}</a>`).join('<br>')}</span>` : ''}
+      ${(e.tautan || []).length ? `<span>Tautan</span><span>${e.tautan.map(u => `<a href="${esc(/^https?:/.test(u) ? u : 'https:\/\/' + u)}" target="_blank">${esc(u)}</a>`).join('<br>')}</span>` : ''}
     </div>
     ${e.deskripsi ? `<div class="panel" style="white-space:pre-wrap">${linkify(esc(e.deskripsi))}</div>` : ''}
     ${ck.length ? `<div class="panel"><h3>Checklist · ${done}/${ck.length}</h3><div class="prog"><i style="width:${done / ck.length * 100}%"></i></div>
@@ -1065,7 +1065,7 @@ function linkify(s) { return s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" ta
 function gcalLink(e) {
   const d = (k, t) => k.replace(/-/g, '') + (t ? 'T' + t.replace(':', '') + '00' : '');
   const dates = e.seharian || !e.jamMulai ? d(e.mulai) + '/' + d(addDays(e.selesai, 1)) : d(e.mulai, e.jamMulai) + '/' + d(e.selesai, e.jamSelesai || e.jamMulai);
-  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(e.judul) + '&dates=' + dates + '&ctz=Asia/Jakarta&details=' + encodeURIComponent(e.deskripsi || '') + '&location=' + encodeURIComponent(e.lokasi || '');
+  return 'https:\/\/calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(e.judul) + '&dates=' + dates + '&ctz=Asia/Jakarta&details=' + encodeURIComponent(e.deskripsi || '') + '&location=' + encodeURIComponent(e.lokasi || '');
 }
 async function toggleCk(id, i) { await call('apiToggleChecklist', id, i); await refresh(true); openDetail(id); }
 async function setStatus(id, s) { const e = S.events.find(x => x.id === id); await call('apiSaveEvent', Object.assign({}, e, { status: s })); toast('Status → ' + s); await refresh(true); openDetail(id); }
@@ -1077,8 +1077,8 @@ async function sendComment() {
 }
 
 /* ---------- files: upload, hover preview & viewer */
-function isImg(f) { return /^image\//.test(f.mime); }
-function thumb(f, w) { return f.fileId ? `https://drive.google.com/thumbnail?id=${f.fileId}&sz=w${w || 400}` : (isImg(f) ? f.url : ''); }
+function isImg(f) { return String(f.mime || '').indexOf('image/') === 0; }
+function thumb(f, w) { return f.fileId ? `https:\/\/drive.google.com/thumbnail?id=${f.fileId}&sz=w${w || 400}` : (isImg(f) ? f.url : ''); }
 function fIcon(f) { return isImg(f) ? '🖼️' : /pdf/.test(f.mime) ? '📕' : /sheet|excel|csv/.test(f.mime) ? '📗' : /word|document/.test(f.mime) ? '📘' : /presentation|powerpoint/.test(f.mime) ? '📙' : /video/.test(f.mime) ? '🎬' : /zip|rar/.test(f.mime) ? '🗜️' : '📄'; }
 function fileCard(f) {
   const t = thumb(f, 300);
@@ -1100,7 +1100,7 @@ function openViewer(id) {
   hideHover(); const f = S.files.find(x => x.id === id);
   document.getElementById('vTitle').textContent = f.nama; document.getElementById('vOpen').href = f.url;
   const b = document.getElementById('vBody');
-  b.innerHTML = f.fileId ? `<iframe src="https://drive.google.com/file/d/${f.fileId}/preview" allow="autoplay"></iframe>`
+  b.innerHTML = f.fileId ? `<iframe src="https:\/\/drive.google.com/file/d/${f.fileId}/preview" allow="autoplay"></iframe>`
     : isImg(f) ? `<img src="${f.url}">` : `<iframe src="${f.url}"></iframe>`;
   document.getElementById('viewer').classList.add('show');
 }
@@ -1143,7 +1143,7 @@ function exportCSV() {
 }
 function exportICS() {
   const d = k => k.replace(/-/g, ''), t = s => s.replace(':', '') + '00';
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Kalender Kerja Wilayah II//ID'];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-\/\/Kalender Kerja Wilayah II\/\/ID'];
   visible().forEach(e => lines.push('BEGIN:VEVENT', 'UID:' + e.id + '@kkw2', 'SUMMARY:' + e.judul.replace(/[,;]/g, '\\$&'),
     e.seharian || !e.jamMulai ? 'DTSTART;VALUE=DATE:' + d(e.mulai) : 'DTSTART;TZID=Asia/Jakarta:' + d(e.mulai) + 'T' + t(e.jamMulai),
     e.seharian || !e.jamMulai ? 'DTEND;VALUE=DATE:' + d(addDays(e.selesai, 1)) : 'DTEND;TZID=Asia/Jakarta:' + d(e.selesai) + 'T' + t(e.jamSelesai || e.jamMulai),
