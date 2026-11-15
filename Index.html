@@ -1266,7 +1266,7 @@ function bhpDocs(e) {
   return keys.map(k => T[k]);
 }
 async function runAi(id) {
-  const b = document.getElementById('aiBtn'); b.disabled = true; b.textContent = '🧠 Menganalisis…';
+  const b = document.getElementById('aiBtn'); b.disabled = true; b.textContent = '🧠 Menganalisis… (±15–40 detik)';
   document.getElementById('aiRes').innerHTML = '<div class="empty"><div class="loader" style="position:static;background:none"><div></div></div></div>';
   try { const r = await call('apiAiDocs', id); if (!r.docs) r.docs = bhpDocs(S.events.find(x => x.id === id)); S.ai = { id, ...r }; if (current && current.id === id) { document.getElementById('aiRes').innerHTML = aiHtml(id); b.textContent = '🔄 Analisis ulang'; b.disabled = false; } }
   catch (err) { toast('⚠️ ' + err.message); b.disabled = false; b.textContent = '🪄 Coba lagi'; document.getElementById('aiRes').innerHTML = ''; }

@@ -457,6 +457,7 @@ function apiAiDocs(eventId) {
 /* ---------------------------------------------------------------- AI Dokumen dengan Claude
  * Script Property: ANTHROPIC_API_KEY (wajib), CLAUDE_MODEL (opsional, default claude-opus-5-5),
  * CLAUDE_EFFORT (opsional: low/medium/high, default low = cepat & hemat kredit),
+ * CLAUDE_FAST (opsional: 0 untuk mematikan mode cepat; default aktif),
  * CONTOH_FOLDER_ID (opsional; default folder "Contoh Dokumen" di folder utama aplikasi).
  * Contoh dokumen dibaca dari Drive: Google Docs & teks (sebagai teks), PDF (dibaca langsung oleh Claude). */
 const ATURAN_DOKUMEN_BHP = [
@@ -485,12 +486,12 @@ function contohDokumen_(ev) {
   files.sort(function (a, b) { return skor(b) - skor(a); });
   const out = []; let pdf = 0;
   files.slice(0, 12).forEach(function (f) {
-    if (out.length >= 6) return;
+    if (out.length >= 3) return;
     const mime = f.getMimeType(), nama = f.getName();
     try {
-      if (mime === MimeType.GOOGLE_DOCS) out.push({ nama: nama, teks: DocumentApp.openById(f.getId()).getBody().getText().slice(0, 8000) });
-      else if (/^text\//.test(mime)) out.push({ nama: nama, teks: f.getBlob().getDataAsString().slice(0, 8000) });
-      else if (mime === MimeType.PDF && pdf < 3 && f.getSize() < 4 * 1024 * 1024) { pdf++; out.push({ nama: nama, pdf: Utilities.base64Encode(f.getBlob().getBytes()) }); }
+      if (mime === MimeType.GOOGLE_DOCS) out.push({ nama: nama, teks: DocumentApp.openById(f.getId()).getBody().getText().slice(0, 4000) });
+      else if (/^text\//.test(mime)) out.push({ nama: nama, teks: f.getBlob().getDataAsString().slice(0, 4000) });
+      else if (mime === MimeType.PDF && pdf < 1 && f.getSize() < 2 * 1024 * 1024) { pdf++; out.push({ nama: nama, pdf: Utilities.base64Encode(f.getBlob().getBytes()) }); }
     } catch (e) { Logger.log('Contoh dilewati ' + nama + ': ' + e); }
   });
   return out;
@@ -504,8 +505,8 @@ function claudeDocs_(ev, key) {
     if (c.pdf) content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: c.pdf }, title: c.nama });
     else content.push({ type: 'text', text: c.teks });
   });
-  content.push({ type: 'text', text: 'Tentukan 3-7 dokumen yang perlu disiapkan (sebelum, saat, dan sesudah) untuk kegiatan berikut, ' +
-    'lalu buat draf isi lengkap tiap dokumen dalam bahasa Indonesia formal sesuai format BHP Medan. Isi data kegiatan yang diketahui, ' +
+  content.push({ type: 'text', text: 'Tentukan 3-5 dokumen terpenting yang perlu disiapkan (sebelum, saat, dan sesudah) untuk kegiatan berikut, ' +
+    'lalu buat draf isi ringkas tetapi siap pakai untuk tiap dokumen (cukup kerangka utama, tanpa pengulangan) dalam bahasa Indonesia formal sesuai format BHP Medan. Isi data kegiatan yang diketahui, ' +
     'gunakan [....] untuk yang harus dilengkapi. Pada "alasan", sebutkan singkat kenapa dokumen itu yang dipakai (mis. kenapa Nota Dinas, bukan Undangan).\n\nKegiatan: ' +
     JSON.stringify({
       judul: ev.judul, deskripsi: ev.deskripsi, tanggal: ev.mulai + (ev.selesai !== ev.mulai ? ' s/d ' + ev.selesai : ''),
@@ -520,18 +521,27 @@ function claudeDocs_(ev, key) {
   const schema = { type: 'object', additionalProperties: false, required: ['docs'], properties: { docs: { type: 'array', items: {
     type: 'object', additionalProperties: false, required: ['nama', 'tahap', 'alasan', 'isi'],
     properties: { nama: { type: 'string' }, tahap: { type: 'string', enum: ['Sebelum', 'Saat', 'Sesudah'] }, alasan: { type: 'string' }, isi: { type: 'string' } } } } } };
-  const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
-    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-    headers: { 'x-api-key': key, 'anthropic-version': '2026-10-21', 'anthropic-beta': 'server-side-fallback-2026-07-01' },
-    payload: JSON.stringify({
+  // Mode cepat (speed: "fast") membuat jawaban keluar jauh lebih cepat; bila ditolak (mis. batas pemakaian),
+  // otomatis diulang dengan kecepatan standar. Matikan dengan Script Property CLAUDE_FAST = 0.
+  const kirim = function (cepat) {
+    const body = {
       model: PROP.getProperty('CLAUDE_MODEL') || 'claude-opus-5-5',
       max_tokens: 16000,
       fallbacks: 'default',
       output_config: { effort: PROP.getProperty('CLAUDE_EFFORT') || 'low', format: { type: 'json_schema', schema: schema } },
       system: system,
       messages: [{ role: 'user', content: content }],
-    }),
-  });
+    };
+    if (cepat) body.speed = 'fast';
+    return UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { 'x-api-key': key, 'anthropic-version': '2026-10-21', 'anthropic-beta': 'server-side-fallback-2026-07-01' },
+      payload: JSON.stringify(body),
+    });
+  };
+  const cepat = PROP.getProperty('CLAUDE_FAST') !== '0';
+  let res = kirim(cepat);
+  if (cepat && res.getResponseCode() !== 200 && res.getResponseCode() !== 401) res = kirim(false);
   if (res.getResponseCode() !== 200) throw new Error('Claude ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 300));
   const msg = JSON.parse(res.getContentText());
   if (msg.stop_reason === 'refusal') throw new Error('Claude menolak permintaan ini');
