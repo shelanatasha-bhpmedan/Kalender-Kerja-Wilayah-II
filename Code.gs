@@ -466,45 +466,76 @@ const ATURAN_DOKUMEN_BHP = [
   '2. SURAT UNDANGAN hanya bila: (a) rapat/kegiatan diadakan di luar kantor BHP Medan dan BHP yang mengundang, atau (b) BHP mengundang orang/pihak luar ke BHP atau ke rapat daring BHP (mis. keluarga, wali/pengampu, ahli waris, kuasa hukum, kreditor/debitor, instansi lain).',
   '3. Pegawai BHP yang berangkat ke luar kantor (pengadilan, Kanwil, pemda, lokasi harta, dll.) memerlukan SURAT TUGAS (dan SPPD/bukti kehadiran perjalanan dinas bila ada perjalanan).',
   '4. Jangan menyarankan dokumen yang tidak relevan. Utamakan dokumen yang memang lazim dipakai BHP Medan.',
-  '5. Bila diberi CONTOH DOKUMEN dari Drive, tiru struktur, gaya bahasa, format nomor, kop, dan penutupnya semirip mungkin, tetapi isi dengan data kegiatan ini. Jangan menyalin data orang/perkara dari contoh.',
+  '5. Bila diberi DOKUMEN TERKAIT dari Drive: (a) surat sejenis (nota dinas, undangan, surat tugas, dll.) dipakai sebagai contoh format, tiru struktur, gaya bahasa, format nomor, kop, dan penutupnya; (b) dokumen tentang kegiatan yang sama (mis. TOR, susunan panitia, rundown, paparan) dipakai sebagai sumber fakta (nama kegiatan, tanggal, narasumber, susunan acara) untuk mengisi draf. Jangan menyalin data orang/perkara dari kasus lain. Pada alasan, sebutkan berkas Drive yang dipakai.',
 ].join('\n');
 
+/* Mencari dokumen relevan di SELURUH Drive pengguna (aplikasi berjalan sebagai pengguna yang mengakses),
+ * ditambah folder "Contoh Dokumen" bila ada. Kata kunci diambil dari judul & keterangan kegiatan
+ * (mis. "webinar", "pengampuan") serta jenis surat yang mungkin dipakai (nota dinas, undangan, ...).
+ * Yang dibaca isinya: Google Docs & teks, serta 1 PDF kecil. File lain (Word/Slides) hanya disebut namanya. */
+const KATA_UMUM_ = ['rapat', 'internal', 'terkait', 'kegiatan', 'panitia', 'teknis', 'tentang', 'dalam', 'untuk', 'dengan', 'pada',
+  'yang', 'hari', 'tanggal', 'pukul', 'acara', 'medan', 'balai', 'harta', 'peninggalan', 'kantor', 'lanjutan', 'tahun', 'bulan'];
+function kataKunci_(ev) {
+  const seen = {};
+  return (ev.judul + ' ' + ev.deskripsi).toLowerCase().split(/[^a-z0-9]+/)
+    .filter(function (w) { if (w.length < 5 || KATA_UMUM_.indexOf(w) >= 0 || seen[w]) return false; seen[w] = 1; return true; })
+    .slice(0, 5);
+}
 function contohDokumen_(ev) {
-  let folder;
+  const files = [], ids = {};
+  const tambah = function (f) { if (f && !ids[f.getId()] && files.length < 60) { ids[f.getId()] = 1; files.push(f); } };
+  // 1) folder Contoh Dokumen (opsional)
   try {
     const id = PROP.getProperty('CONTOH_FOLDER_ID');
-    folder = id ? DriveApp.getFolderById(id) : getOrCreate_(DriveApp.getFolderById(PROP.getProperty('ROOT_ID')), 'Contoh Dokumen');
-  } catch (e) { return []; }
-  const files = [];
-  const ambil = function (f) { const it = f.getFiles(); while (it.hasNext() && files.length < 80) files.push(it.next()); };
-  ambil(folder);
-  const subs = folder.getFolders(); while (subs.hasNext()) ambil(subs.next());
-  if (!files.length) return [];
-  const kata = (ev.judul + ' ' + ev.kategori + ' ' + ev.deskripsi + ' nota dinas undangan surat tugas laporan notulen daftar hadir berita acara')
-    .toLowerCase().split(/[^a-z0-9]+/).filter(function (w) { return w.length > 3; });
-  const skor = function (f) { const n = f.getName().toLowerCase(); return kata.reduce(function (s, w) { return s + (n.indexOf(w) >= 0 ? 1 : 0); }, 0); };
+    const folder = id ? DriveApp.getFolderById(id) : getOrCreate_(DriveApp.getFolderById(PROP.getProperty('ROOT_ID')), 'Contoh Dokumen');
+    const it = folder.getFiles(); while (it.hasNext()) tambah(it.next());
+  } catch (e) { /* tidak ada folder contoh */ }
+  // 2) pencarian di seluruh Drive
+  const topik = kataKunci_(ev);
+  const jenis = ['nota dinas', 'undangan', 'surat tugas', 'notulen', 'laporan', 'daftar hadir', 'kerangka acuan', 'TOR'];
+  const mime = "(mimeType = 'application/vnd.google-apps.document' or mimeType = 'application/pdf' or " +
+    "mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' or mimeType = 'application/vnd.google-apps.presentation')";
+  const q = function (s) { return s.replace(/'/g, "\\'"); };
+  const cari = function (query, maks) {
+    try { const it = DriveApp.searchFiles(query + ' and trashed = false and ' + mime); let n = 0; while (it.hasNext() && n++ < maks) tambah(it.next()); }
+    catch (e) { Logger.log('Cari Drive gagal: ' + e); }
+  };
+  if (topik.length) {
+    cari('(' + topik.map(function (w) { return "title contains '" + q(w) + "'"; }).join(' or ') + ')', 25);
+    cari('(' + topik.map(function (w) { return "fullText contains '" + q(w) + "'"; }).join(' or ') + ')', 15);
+  }
+  cari('(' + jenis.map(function (w) { return "title contains '" + q(w) + "'"; }).join(' or ') + ')', 15);
+  if (!files.length) return { baca: [], nama: [] };
+  // urutkan: paling banyak kata topik di nama file, lalu jenis surat, lalu yang terbaru
+  const skor = function (f) {
+    const n = f.getName().toLowerCase();
+    return topik.reduce(function (s, w) { return s + (n.indexOf(w) >= 0 ? 3 : 0); }, 0) +
+      jenis.reduce(function (s, w) { return s + (n.indexOf(w.toLowerCase()) >= 0 ? 2 : 0); }, 0) +
+      (Date.now() - f.getLastUpdated().getTime() < 180 * 864e5 ? 1 : 0);
+  };
   files.sort(function (a, b) { return skor(b) - skor(a); });
-  const out = []; let pdf = 0;
-  files.slice(0, 12).forEach(function (f) {
-    if (out.length >= 3) return;
-    const mime = f.getMimeType(), nama = f.getName();
+  const baca = []; let pdf = 0;
+  files.slice(0, 15).forEach(function (f) {
+    if (baca.length >= 4) return;
+    const m = f.getMimeType(), nama = f.getName();
     try {
-      if (mime === MimeType.GOOGLE_DOCS) out.push({ nama: nama, teks: DocumentApp.openById(f.getId()).getBody().getText().slice(0, 4000) });
-      else if (/^text\//.test(mime)) out.push({ nama: nama, teks: f.getBlob().getDataAsString().slice(0, 4000) });
-      else if (mime === MimeType.PDF && pdf < 1 && f.getSize() < 2 * 1024 * 1024) { pdf++; out.push({ nama: nama, pdf: Utilities.base64Encode(f.getBlob().getBytes()) }); }
-    } catch (e) { Logger.log('Contoh dilewati ' + nama + ': ' + e); }
+      if (m === MimeType.GOOGLE_DOCS) baca.push({ nama: nama, teks: DocumentApp.openById(f.getId()).getBody().getText().slice(0, 3500) });
+      else if (m === MimeType.PDF && pdf < 1 && f.getSize() < 2 * 1024 * 1024) { pdf++; baca.push({ nama: nama, pdf: Utilities.base64Encode(f.getBlob().getBytes()) }); }
+    } catch (e) { Logger.log('Dilewati ' + nama + ': ' + e); }
   });
-  return out;
+  const dibaca = baca.map(function (b) { return b.nama; });
+  return { baca: baca, nama: files.slice(0, 20).map(function (f) { return f.getName(); }).filter(function (n) { return dibaca.indexOf(n) < 0; }) };
 }
 
 function claudeDocs_(ev, key) {
-  const contoh = contohDokumen_(ev);
+  const hasil = contohDokumen_(ev), contoh = hasil.baca;
   const content = [];
   contoh.forEach(function (c) {
-    content.push({ type: 'text', text: 'CONTOH DOKUMEN dari Drive BHP Medan: "' + c.nama + '"' });
+    content.push({ type: 'text', text: 'DOKUMEN TERKAIT dari Drive BHP Medan: "' + c.nama + '"' });
     if (c.pdf) content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: c.pdf }, title: c.nama });
     else content.push({ type: 'text', text: c.teks });
   });
+  if (hasil.nama.length) content.push({ type: 'text', text: 'Berkas lain di Drive yang namanya relevan (isi tidak dibaca): ' + hasil.nama.join('; ') });
   content.push({ type: 'text', text: 'Tentukan 3-5 dokumen terpenting yang perlu disiapkan (sebelum, saat, dan sesudah) untuk kegiatan berikut, ' +
     'lalu buat draf isi ringkas tetapi siap pakai untuk tiap dokumen (cukup kerangka utama, tanpa pengulangan) dalam bahasa Indonesia formal sesuai format BHP Medan. Isi data kegiatan yang diketahui, ' +
     'gunakan [....] untuk yang harus dilengkapi. Pada "alasan", sebutkan singkat kenapa dokumen itu yang dipakai (mis. kenapa Nota Dinas, bukan Undangan).\n\nKegiatan: ' +
