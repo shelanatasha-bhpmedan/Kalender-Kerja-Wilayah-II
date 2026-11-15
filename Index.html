@@ -275,7 +275,9 @@ kbd{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6p
 /* mobile */
 @media (max-width:900px){
   body{font-size:15px}
-  .app{grid-template-columns:1fr;padding:10px 10px 84px;gap:10px}
+  .app{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr);padding:10px 10px 84px;gap:10px}
+  .main{min-height:0}.view{min-height:0}
+  .scroll{-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:90px}
   .side{display:none;position:fixed;inset:0 0 70px 0;z-index:40;border-radius:0 0 24px 24px}
   .side.open{display:flex;animation:fade .2s}
   .top{padding:8px}.top h1{font-size:18px;margin:0 4px;order:-1;flex:1}
