@@ -1458,7 +1458,21 @@ document.addEventListener('keydown', e => {
   document.addEventListener('dragstart', hide); document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
 })();
 
-setInterval(() => { try { renderBrief(); } catch (e) {} }, 60000);
+/* Kegiatan yang tanggal selesainya sudah lewat otomatis berstatus "Selesai" (kecuali yang Dibatalkan).
+ * Disimpan ke database agar semua anggota tim melihat status yang sama; dicek saat dibuka dan tiap menit
+ * (berguna saat lewat tengah malam). */
+let autoBusy = false;
+async function selesaiOtomatis() {
+  if (autoBusy) return; autoBusy = true;
+  try {
+    const t = todayKey(), lewat = S.events.filter(e => e.selesai < t && (e.status === 'Direncanakan' || e.status === 'Berjalan'));
+    for (const e of lewat) {
+      try { Object.assign(e, await call('apiSaveEvent', Object.assign({}, e, { status: 'Selesai' }))); } catch (err) { console.warn('selesai otomatis', err); }
+    }
+    if (lewat.length) { render(); toast(`✅ ${lewat.length} kegiatan yang sudah lewat ditandai Selesai`); }
+  } finally { autoBusy = false; }
+}
+setInterval(() => { try { renderBrief(); selesaiOtomatis(); } catch (e) {} }, 60000);
 /* ============================================================ rekap bulanan
  * Menghitung kegiatan & lampiran pada bulan yang sedang ditampilkan, langsung dari data
  * terbaru (ikut sinkron realtime). Entri yang sama persis (judul, tanggal, jam, lokasi, dan
@@ -1538,7 +1552,7 @@ function exportRekap() {
   } catch (e) { toast('⚠️ Gagal memuat: ' + e.message); }
   const l = document.getElementById('loader'); l && l.remove();
   render();
-  tambahKegiatan();
+  tambahKegiatan().then(selesaiOtomatis);
   // Pembaruan sekali jalan: tautan Zoom rapat 13 Nov 2026 diganti tautan berpassword.
   (async () => {
     const ZOOM = 'https:\/\/us06web.zoom.us/j/3208006444?pwd=d5NxplAXHqHGaOxgPbE3Zl2ebf1r7o.1&omn=85627561232';
