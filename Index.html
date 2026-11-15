@@ -1266,14 +1266,14 @@ function bhpDocs(e) {
   return keys.map(k => T[k]);
 }
 async function runAi(id) {
-  const b = document.getElementById('aiBtn'); b.disabled = true; b.textContent = '🧠 Menganalisis…';
+  const b = document.getElementById('aiBtn'); b.disabled = true; b.textContent = '🧠 Menganalisis… (±15–40 detik)';
   document.getElementById('aiRes').innerHTML = '<div class="empty"><div class="loader" style="position:static;background:none"><div></div></div></div>';
   try { const r = await call('apiAiDocs', id); if (!r.docs) r.docs = bhpDocs(S.events.find(x => x.id === id)); S.ai = { id, ...r }; if (current && current.id === id) { document.getElementById('aiRes').innerHTML = aiHtml(id); b.textContent = '🔄 Analisis ulang'; b.disabled = false; } }
   catch (err) { toast('⚠️ ' + err.message); b.disabled = false; b.textContent = '🪄 Coba lagi'; document.getElementById('aiRes').innerHTML = ''; }
 }
 function aiHtml(id) {
   const r = S.ai; const TC = { Sebelum: '#6d5dfc', Saat: '#22a3e6', Sesudah: '#16b981' };
-  return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><small style="color:var(--muted);flex:1">${r.galat ? `<span style="display:block;color:var(--danger);margin-bottom:4px">⚠️ AI gagal: ${esc(r.galat)}</span>` : ''}${r.sumber === 'claude' ? '✨ Dihasilkan Claude' + ((r.contoh || []).length ? ' · meniru ' + r.contoh.length + ' contoh dari Drive: ' + esc(r.contoh.join(', ')) : '') : r.sumber === 'gemini' ? '🤖 Dihasilkan Google Gemini' : '📚 Template format BHP Medan (isi ANTHROPIC_API_KEY untuk analisis AI penuh)'} · ${r.docs.length} dokumen</small>
+  return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><small style="color:var(--muted);flex:1">${r.galat ? `<span style="display:block;color:var(--danger);margin-bottom:4px">⚠️ AI gagal: ${esc(r.galat)}</span>` : ''}${r.sumber === 'claude' ? '✨ Dihasilkan Claude' + ((r.contoh || []).length ? ' · memakai ' + r.contoh.length + ' berkas dari Drive Anda: ' + esc(r.contoh.join(', ')) : '') : r.sumber === 'gemini' ? '🤖 Dihasilkan Google Gemini' : '📚 Template format BHP Medan (isi ANTHROPIC_API_KEY untuk analisis AI penuh)'} · ${r.docs.length} dokumen</small>
     <button class="btn btn-ghost" onclick="aiToTodo('${id}')">☑ Masukkan ke To Do</button><button class="btn btn-primary" onclick="aiCreateAll('${id}')">📄 Buat semua dokumen</button></div>
     ${r.docs.map((d, i) => `<div class="ai-doc"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1">📄 ${esc(d.nama)}</b>
       <span class="tag" style="background:${soft(TC[d.tahap] || '#888888')};color:${TC[d.tahap] || '#888'}">${esc(d.tahap || '')}</span>
@@ -1283,7 +1283,7 @@ function aiHtml(id) {
 async function aiToTodo(id) { await call('apiAddChecklist', id, S.ai.docs.map(d => 'Siapkan ' + d.nama)); toast('☑ Ditambahkan ke To Do List'); refresh(true); }
 async function aiCreate(id, i, quiet) {
   const d = S.ai.docs[i], b = document.getElementById('aiC' + i); if (b) { b.disabled = true; b.textContent = 'Membuat…'; }
-  try { const f = await call('apiCreateDoc', id, d.nama, d.isi); if (b) { b.textContent = '✅ Dibuat'; } if (!quiet) { toast('📄 ' + d.nama + ' dibuat di Google Drive', 'Buka', () => window.open(f.url, '_blank')); refresh(true); } }
+  try { const f = await call('apiCreateDoc', id, d.nama, d.isi, LOGO_PENGAYOMAN.split(',')[1]); if (b) { b.textContent = '✅ Dibuat'; } if (!quiet) { toast('📄 ' + d.nama + ' dibuat di Google Drive', 'Buka', () => window.open(f.url, '_blank')); refresh(true); } }
   catch (err) { toast('⚠️ ' + err.message); if (b) { b.disabled = false; b.textContent = 'Coba lagi'; } }
 }
 async function aiCreateAll(id) { for (let i = 0; i < S.ai.docs.length; i++) await aiCreate(id, i, true); toast('📄 Semua draf dokumen dibuat di folder Drive kegiatan'); await refresh(true); }
