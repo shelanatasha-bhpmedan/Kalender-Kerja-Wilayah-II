@@ -554,7 +554,7 @@ function claudeDocs_(ev, key) {
     'Format surat dinas BHP Medan: kop "KEMENTERIAN HUKUM REPUBLIK INDONESIA / KANTOR WILAYAH SUMATERA UTARA / BALAI HARTA PENINGGALAN MEDAN / ' +
     'Jalan Listrik No. 10 Medan", nomor "W.2.AHU.AHU.1-<kode>-[....]", Sifat/Lampiran/Hal, "Yth. ...", penutup "Demikian ...", ' +
     'tanda tangan "Kepala," lalu nama Kepala BHP Medan: ' + (PROP.getProperty('KEPALA_NAMA') || 'Syafriadi Lubis') + ' (WAJIB ditulis lengkap, jangan [....]), dan Tembusan bila perlu. ' +
-    'Data tetap kantor (nama instansi, alamat, nama Kepala) selalu diisi, jangan diganti [....]; [....] hanya untuk data yang benar-benar belum diketahui seperti nomor surat. JANGAN tulis kop surat di draf (kop dengan logo dibuat otomatis); mulai isi dari judul/nomor surat.\n\n' + ATURAN_DOKUMEN_BHP;
+    'Data tetap kantor (nama instansi, alamat, nama Kepala) selalu diisi, jangan diganti [....]; [....] hanya untuk data yang benar-benar belum diketahui seperti nomor surat. JANGAN tulis kop surat di draf (kop dibuat otomatis); mulai isi dari judul/nomor surat. FORMAT BARIS draf (penting agar rapi saat dijadikan Google Doc): judul surat huruf kapital di baris sendiri (mis. NOTA DINAS), lalu "NOMOR W.2.AHU.AHU.1-..."; baris kepala surat ditulis "Yth. : ...", "Dari : ...", "Hal : ...", "Lampiran : ...", "Tanggal : ..." (satu per baris); rincian waktu ditulis "Hari, tanggal : ...", "Waktu : ...", "Tempat : ...", "Agenda : ..."; butir bernomor "1. ...", sub-butir "a. ..."; tanda tangan: baris "Kepala,", tiga baris kosong, lalu nama Kepala.\n\n' + ATURAN_DOKUMEN_BHP;
   const schema = { type: 'object', additionalProperties: false, required: ['docs'], properties: { docs: { type: 'array', items: {
     type: 'object', additionalProperties: false, required: ['nama', 'tahap', 'alasan', 'isi'],
     properties: { nama: { type: 'string' }, tahap: { type: 'string', enum: ['Sebelum', 'Saat', 'Sesudah'] }, alasan: { type: 'string' }, isi: { type: 'string' } } } } } };
@@ -642,52 +642,131 @@ function apiCreateDoc(eventId, nama, isi, logoB64) {
   if (!ev) throw new Error('Kegiatan tidak ditemukan');
   const doc = DocumentApp.create(nama + ' — ' + ev.judul);
   const body = doc.getBody();
+  const H = DocumentApp.HorizontalAlignment;
   // Catatan: sebagian setter DocumentApp (mis. Paragraph.setText) tidak mengembalikan objek,
   // jadi setiap pemanggilan ditulis terpisah (tanpa chaining) agar tidak error "null".
-  body.setMarginTop(36); body.setMarginBottom(56); body.setMarginLeft(72); body.setMarginRight(56); // pt (A4, kiri 2,54 cm)
+  // Ukuran mengikuti contoh surat BHP Medan: A4, margin atas/bawah/kanan 2 cm, kiri 2,5 cm, Arial 12.
+  body.setMarginTop(57); body.setMarginBottom(57); body.setMarginLeft(71); body.setMarginRight(57);
   const font = function (el, size, bold) { el.setFontFamily('Arial'); el.setFontSize(size); el.setBold(!!bold); return el; };
-  const rapat = function (p, align) { if (align) p.setAlignment(align); p.setSpacingBefore(0); p.setSpacingAfter(0); };
-
-  // ---- kop: tabel 2 kolom tanpa garis (logo | teks)
-  const tbl = body.insertTable(0, [['', '']]);
-  tbl.setBorderWidth(0);
-  tbl.setColumnWidth(0, 78);
-  const cLogo = tbl.getCell(0, 0), cTeks = tbl.getCell(0, 1);
-  cLogo.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER); cLogo.setPaddingLeft(0); cLogo.setPaddingRight(4);
-  cTeks.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
-  if (logoB64) {
-    try {
-      const pLogo = cLogo.getChild(0).asParagraph();
-      const img = pLogo.appendInlineImage(Utilities.newBlob(Utilities.base64Decode(logoB64), 'image/png', 'logo.png'));
-      const r = img.getHeight() / img.getWidth(); img.setWidth(68); img.setHeight(Math.round(68 * r));
-      pLogo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    } catch (e) { Logger.log('Logo gagal: ' + e); }
-  }
-  KOP_BHP_.forEach(function (k, i) {
-    const p = i === 0 ? cTeks.getChild(0).asParagraph() : cTeks.appendParagraph(k.t);
-    if (i === 0) p.setText(k.t);
-    rapat(p, DocumentApp.HorizontalAlignment.CENTER); p.setLineSpacing(1);
-    font(p, k.s, k.b);
-  });
-  const garis = body.insertParagraph(1, '');
-  garis.appendHorizontalRule();
-  garis.setSpacingBefore(2); garis.setSpacingAfter(6);
-
-  // ---- isi surat
-  const lines = buangKopTeks_(String(isi || '').split('\n'));
-  let first = true;
-  lines.forEach(function (line) {
+  const fmt = function (p, o) {
+    o = o || {};
+    p.setHeading(DocumentApp.ParagraphHeading.NORMAL);
+    p.setAlignment(o.align || H.LEFT);
+    p.setSpacingBefore(o.before || 0); p.setSpacingAfter(o.after || 0);
+    p.setLineSpacing(o.line || 1.15);
+    p.setIndentStart(o.start || 0); p.setIndentFirstLine(o.first === undefined ? (o.start || 0) : o.first); p.setIndentEnd(0);
+    font(p, o.size || 12, o.bold);
+    return p;
+  };
+  let pertama = true;
+  const para = function (teks, o) {
     let p;
-    if (first) { const ps = body.getParagraphs(); p = ps[ps.length - 1]; p.setText(line); first = false; }
-    else p = body.appendParagraph(line);
-    p.setHeading(DocumentApp.ParagraphHeading.NORMAL); rapat(p); p.setLineSpacing(1.15);
-    font(p, 12, false);
-    const s = line.trim();
-    // judul surat (mis. NOTA DINAS, SURAT TUGAS, NOTULEN) & nomornya: rata tengah, judul tebal
-    if (s && s.length <= 70 && s === s.toUpperCase() && /[A-Z]/.test(s) && !/[:|]/.test(s)) { p.setAlignment(DocumentApp.HorizontalAlignment.CENTER); font(p, 12, true); }
-    else if (/^NOMOR\b|^Nomor\s*:?\s*W\.2/i.test(s) && s.length < 70 && !/\t/.test(line)) p.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    else p.setAlignment(DocumentApp.HorizontalAlignment.JUSTIFY);
+    if (pertama) { const ps = body.getParagraphs(); p = ps[ps.length - 1]; p.setText(teks); pertama = false; }
+    else p = body.appendParagraph(teks);
+    return fmt(p, o);
+  };
+  // tabel tanpa garis untuk baris "Label : isi" agar titik dua sejajar seperti di Word
+  const tabelLabel = function (rows, lebar) {
+    const t = body.appendTable(rows.map(function (r) { return [r[0], ':', r[1]]; }));
+    t.setBorderWidth(0);
+    lebar.forEach(function (w, i) { if (w) t.setColumnWidth(i, w); });
+    for (let r = 0; r < t.getNumRows(); r++) {
+      for (let k = 0; k < 3; k++) {
+        const cell = t.getCell(r, k);
+        cell.setPaddingTop(1); cell.setPaddingBottom(1); cell.setPaddingLeft(0); cell.setPaddingRight(2);
+        for (let j = 0; j < cell.getNumChildren(); j++) {
+          const el = cell.getChild(j);
+          if (el.getType() === DocumentApp.ElementType.PARAGRAPH) fmt(el.asParagraph(), { line: 1.15, align: k === 2 ? H.JUSTIFY : H.LEFT });
+        }
+      }
+    }
+    pertama = false;
+    return t;
+  };
+
+  const lines = buangKopTeks_(String(isi || '').split('\n'));
+  const nota = /nota dinas/i.test(nama) || lines.slice(0, 4).some(function (l) { return /^\s*NOTA DINAS\s*$/i.test(l); });
+
+  // ---- KOP
+  if (nota) {
+    // Nota Dinas (surat internal): kop 3 baris rata tengah tanpa logo, seperti contoh BHP Medan
+    para('KEMENTERIAN HUKUM REPUBLIK INDONESIA', { align: H.CENTER, line: 1 });
+    para('KANTOR WILAYAH SUMATERA UTARA', { align: H.CENTER, line: 1 });
+    para('BALAI HARTA PENINGGALAN MEDAN', { align: H.CENTER, line: 1, bold: true });
+  } else {
+    // surat keluar: logo Pengayoman + teks kop lengkap + garis
+    const tbl = body.insertTable(0, [['', '']]);
+    tbl.setBorderWidth(0); tbl.setColumnWidth(0, 78);
+    const cLogo = tbl.getCell(0, 0), cTeks = tbl.getCell(0, 1);
+    cLogo.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER); cLogo.setPaddingLeft(0); cLogo.setPaddingRight(4);
+    cTeks.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
+    if (logoB64) {
+      try {
+        const pLogo = cLogo.getChild(0).asParagraph();
+        const img = pLogo.appendInlineImage(Utilities.newBlob(Utilities.base64Decode(logoB64), 'image/png', 'logo.png'));
+        const r = img.getHeight() / img.getWidth(); img.setWidth(68); img.setHeight(Math.round(68 * r));
+        pLogo.setAlignment(H.CENTER);
+      } catch (e) { Logger.log('Logo gagal: ' + e); }
+    }
+    KOP_BHP_.forEach(function (k, i) {
+      const p = i === 0 ? cTeks.getChild(0).asParagraph() : cTeks.appendParagraph(k.t);
+      if (i === 0) p.setText(k.t);
+      fmt(p, { align: H.CENTER, line: 1, size: k.s, bold: k.b });
+    });
+    const garis = body.insertParagraph(1, '');
+    garis.appendHorizontalRule(); garis.setSpacingBefore(2); garis.setSpacingAfter(6);
+  }
+
+  // ---- ISI: dikenali per pola baris
+  const reKepala = /^(Yth\.?|Kepada|Dari|Hal|Perihal|Sifat|Lampiran|Tanggal)\s*\t*\s*:\s*(.*)$/i;
+  const reRinci = /^(Hari\s*\/\s*Tanggal|Hari,?\s*tanggal|Hari|Tanggal|Waktu|Pukul|Jam|Tempat|Acara|Agenda|Pimpinan Rapat|Notulis|Peserta|Tautan|ID Rapat|Kata sandi|Pakaian|Narasumber|Dasar|Untuk|Menimbang)\s*\t*\s*:\s*(.*)$/i;
+  const namaKepala = (PROP.getProperty('KEPALA_NAMA') || 'Syafriadi Lubis').toLowerCase();
+  let fase = 'judul', buf = [], bufRinci = [], ttd = false;
+  const flushKepala = function () {
+    if (!buf.length) return;
+    tabelLabel(buf, [78, 14, null]); buf = [];
+    if (nota) { const g = body.appendParagraph(''); g.appendHorizontalRule(); g.setSpacingBefore(4); g.setSpacingAfter(10); }
+    else para('', { line: 1 });
+  };
+  const flushRinci = function () {
+    if (!bufRinci.length) return;
+    // geser ke kanan seperti contoh: kolom kosong 21pt + label + titik dua + isi
+    const t = body.appendTable(bufRinci.map(function (r) { return ['', r[0], ':', r[1]]; }));
+    t.setBorderWidth(0); t.setColumnWidth(0, 21); t.setColumnWidth(1, 106); t.setColumnWidth(2, 14);
+    for (let r = 0; r < t.getNumRows(); r++) for (let k = 0; k < 4; k++) {
+      const cell = t.getCell(r, k);
+      cell.setPaddingTop(1); cell.setPaddingBottom(1); cell.setPaddingLeft(0); cell.setPaddingRight(2);
+      for (let j = 0; j < cell.getNumChildren(); j++) { const el = cell.getChild(j); if (el.getType() === DocumentApp.ElementType.PARAGRAPH) fmt(el.asParagraph(), {}); }
+    }
+    bufRinci = []; pertama = false;
+  };
+  lines.forEach(function (raw) {
+    const line = raw.replace(/\s+$/, ''), s = line.trim();
+    let m;
+    if (fase !== 'isi' && (m = s.match(reKepala)) && !(fase === 'judul' && /^tanggal$/i.test(m[1]) && !buf.length)) {
+      fase = 'kepala'; buf.push([m[1].replace(/^yth$/i, 'Yth.'), m[2]]); return;
+    }
+    if (fase === 'kepala') { if (!s) return; flushKepala(); fase = 'isi'; }
+    if (fase === 'judul') {
+      if (!s) return;
+      if (/^NOMOR\b|^Nomor\s*:/i.test(s)) { para(s.replace(/^nomor\s*:?\s*/i, 'NOMOR '), { align: H.CENTER, before: 6, after: 18, line: 1 }); return; }
+      if (s === s.toUpperCase() && s.length <= 70 && /[A-Z]/.test(s)) { para(s, { align: H.CENTER, before: nota ? 18 : 6, line: 1, bold: !nota }); return; }
+      fase = 'isi';
+    }
+    // fase isi
+    if ((m = s.match(reRinci)) && !ttd) { bufRinci.push([m[1], m[2]]); return; }
+    flushRinci();
+    if (!s) { if (!ttd) para('', { line: 1 }); else para('', { start: 283, line: 1 }); return; }
+    if (/^(kepala|plh\.? kepala|plt\.? kepala|a\.n\.? kepala)[ ,]*.*,?$/i.test(s) && s.length < 60) { ttd = true; para(s, { start: 283, before: 6, line: 1 }); return; }
+    if (ttd && (s.toLowerCase().indexOf(namaKepala) >= 0 || /^NIP\b/i.test(s) || /^\[.*\]$/.test(s))) { para(s, { start: 283, line: 1 }); return; }
+    if (/^tembusan\s*:?/i.test(s)) { ttd = false; para(s, { before: 12 }); return; }
+    if (/^\d+\.\s/.test(s) || /^\d+\.\t/.test(line.trim())) { para(s.replace(/^(\d+\.)\s+/, '$1\t'), { start: 21, first: 0, align: H.JUSTIFY, after: 6 }); return; }
+    if (/^[a-z]\.\s/.test(s)) { para(s.replace(/^([a-z]\.)\s+/, '$1\t'), { start: 42, first: 21, align: H.JUSTIFY, after: 4 }); return; }
+    if (/^[-•]\s/.test(s)) { para(s, { start: 21, first: 0, align: H.JUSTIFY, after: 4 }); return; }
+    if (s === s.toUpperCase() && s.length <= 70 && /[A-Z]{3}/.test(s) && !/[:|]/.test(s)) { para(s, { align: H.CENTER, before: 6, after: 6, bold: true }); return; }
+    para(s, { first: 36, align: H.JUSTIFY, after: 6 });
   });
+  flushKepala(); flushRinci();
   doc.saveAndClose();
 
   const file = DriveApp.getFileById(doc.getId());
