@@ -1203,6 +1203,15 @@ const BHP = {
   dipa: 'Daftar Isian Pelaksanaan Anggaran Balai Harta Peninggalan Medan Nomor: SP DIPA-135.04.2.692042/' + new Date().getFullYear(),
 };
 function tglIndo(k) { const d = parse(k); return d.getDate() + ' ' + BLN[d.getMonth()] + ' ' + d.getFullYear(); }
+/* Jenis rapat: 'internal' (pegawai BHP, di BHP/daring) → Nota Dinas; 'undangLuar' (di BHP/daring tetapi
+ * mengundang pihak luar) → Surat Undangan; 'diLuar' (diadakan di luar kantor BHP) → Surat Tugas. */
+function jenisRapat(e) {
+  const lok = String(e.lokasi || '').toLowerCase(), txt = (e.judul + ' ' + e.deskripsi).toLowerCase();
+  const diBhp = !lok || /bhp|balai harta|listrik|aula|ruang rapat|kantor$/.test(lok) || /zoom|daring|online|meet/.test(lok);
+  if (!diBhp) return 'diLuar';
+  return /keluarga|wali|pengampu|ahli waris|kuasa hukum|advokat|kreditor|debitor|pengadilan|hakim|kanwil|pemkab|pemkot|pemda|notaris|instansi|mitra|bank|pt\.? /.test(txt) ? 'undangLuar' : 'internal';
+}
+function rapatEksternal(e) { return jenisRapat(e) !== 'internal'; }
 function bhpDocs(e) {
   const hari = HR_FULL[parse(e.mulai).getDay()];
   const tgl = hari + ' / ' + tglIndo(e.mulai) + (e.selesai !== e.mulai ? ' s.d. ' + tglIndo(e.selesai) : '');
@@ -1211,7 +1220,9 @@ function bhpDocs(e) {
   const pegawai = (e.peserta || []).length ? e.peserta.map((p, i) => `${i + 1}. ${p.split('@')[0]} — NIP [....] — [Pangkat/Gol.] — [Jabatan]`).join('\n') : '1. [Nama] — NIP [....] — [Pangkat/Gol.] — [Jabatan]\n2. [....]';
   const kopSurat = (kode, hal, sifat) => `${BHP.kop}\n\nNomor\t: ${BHP.nomor(kode)}\t\t\tMedan, ${tglIndo(todayKey())}\nSifat\t: ${sifat || 'Biasa'}\nLampiran\t: -\nHal\t: ${hal}\n\n`;
   const T = {
-    undangan: { nama: 'Surat Undangan', tahap: 'Sebelum', alasan: 'Mengundang pihak terkait secara resmi',
+    notaDinas: { nama: 'Nota Dinas', tahap: 'Sebelum', alasan: 'Rapat internal BHP Medan (peserta pegawai BHP) memakai Nota Dinas, bukan Surat Undangan',
+      isi: `${BHP.kop}\n\nNOTA DINAS\nNOMOR ${BHP.nomor('UM.01.01')}\n\nYth.\t: [Pejabat/Pegawai yang dituju]\nDari\t: Kepala Balai Harta Peninggalan Medan\nHal\t: ${e.judul}\nTanggal\t: ${tglIndo(todayKey())}\n\nDalam rangka ${e.judul}, dengan ini diminta kehadiran Saudara pada:\n${waktu}\nAcara\t\t: [....]\n\nDemikian disampaikan, atas perhatian dan kehadirannya diucapkan terima kasih.\n\n${BHP.kepala}` },
+    undangan: { nama: 'Surat Undangan', tahap: 'Sebelum', alasan: 'Rapat di luar BHP atau mengundang pihak luar ke BHP',
       isi: kopSurat('UM.01.01', 'Undangan ' + e.judul, 'Segera') + `Yth. [....]\ndi\n[alamat]\n\nSehubungan dengan pelaksanaan tugas dan fungsi Balai Harta Peninggalan Medan, dengan hormat kami mengundang Bapak/Ibu untuk hadir dalam kegiatan ${e.judul} yang akan dilaksanakan pada:\n\n${waktu}\n\n${e.deskripsi ? 'Agenda: ' + e.deskripsi + '\n\n' : ''}Demikian disampaikan, atas perhatian dan kehadiran Bapak/Ibu diucapkan terima kasih.\n\n${BHP.kepala}\n\n${BHP.tembusan}` },
     undanganSumpah: { nama: 'Undangan Pengambilan Sumpah dan Inventarisasi Harta', tahap: 'Sebelum', alasan: 'Memanggil wali/pengampu untuk penyumpahan sesuai penetapan pengadilan',
       isi: kopSurat('AH.06.03', 'Undangan Pengambilan Sumpah Wali/Pengampu dan Inventarisasi Harta', 'Segera') + `Yth. Bapak/Ibu [NAMA WALI/PENGAMPU]\ndi\n[alamat]\n\nMenindaklanjuti Penetapan Pengadilan [Negeri/Agama] [....] Nomor: [....]/Pdt.P/[....] tertanggal [....] yang telah memperoleh kekuatan hukum tetap, Bapak/Ibu telah ditunjuk secara resmi sebagai [Wali/Pengampu] atas [NAMA ANAK/TERAMPU], kami mengundang Bapak/Ibu untuk hadir dalam kegiatan Pengangkatan Sumpah pada:\n\n${waktu}\n\nGuna kelengkapan administrasi Berita Acara Penyumpahan dan Pencatatan Harta sesuai ketentuan peraturan perundang-undangan, kami memohon kesediaan Bapak/Ibu membawa dokumen pendukung, meliputi:\n1. Fotokopi Penetapan Pengadilan;\n2. Fotokopi Dokumen Kepemilikan Aset / Harta Kekayaan;\n3. Fotokopi KTP 2 (dua) orang saksi dari pihak Kepala Lingkungan dan/atau Keluarga;\n4. Meterai Rp 10.000,- sebanyak 4 (empat) lembar;\n5. Biaya PNBP sesuai PP Nomor 45 Tahun 2024 (dibayar melalui kode billing saat kegiatan).\n\nDemikian surat pemberitahuan ini kami sampaikan. Informasi lebih lanjut dapat menghubungi Contact Person (WhatsApp) Layanan Perwalian dan Pengampuan: 0851-2156-2136. Atas perhatian dan kesediaan Bapak/Ibu, kami ucapkan terima kasih.\n\n${BHP.kepala}\n\n${BHP.tembusan.replace('4. Pertinggal.', '4. Lurah/Kepala Desa setempat;\n5. Pertinggal.')}` },
@@ -1238,10 +1249,15 @@ function bhpDocs(e) {
   let keys;
   if (e.kategori === 'Cuti') keys = ['cuti'];
   else if (e.kategori === 'Penyumpahan' || /sumpah|penyumpahan/.test(txt)) keys = ['undanganSumpah', 'daftarHadir', 'baSumpah', 'baInventaris', 'dokumentasi', 'laporan'];
-  else if (e.kategori === 'Inventarisasi' || /inventaris|harta/.test(txt)) keys = ['suratTugas', 'undanganSumpah', 'baInventaris', 'dokumentasi', 'laporan'];
-  else if (e.kategori === 'Koordinasi' || /koordinasi|kunjungan/.test(txt)) keys = ['suratTugas', 'daftarHadir', 'notulen', 'dokumentasi', 'laporan', 'pengantar'];
+  else if (e.kategori === 'Rapat' || e.kategori === 'Koordinasi' || /rapat|pertemuan|monitoring|koordinasi/.test(txt)) {
+    const j = jenisRapat(e);
+    keys = j === 'internal' ? ['notaDinas', 'daftarHadir', 'notulen', 'dokumentasi', 'laporan']
+      : j === 'undangLuar' ? ['undangan', 'daftarHadir', 'notulen', 'dokumentasi', 'laporan']
+      : ['suratTugas', 'notulen', 'dokumentasi', 'laporan', 'pengantar'];
+  }
+  else if (e.kategori === 'Inventarisasi' || /inventaris/.test(txt)) keys = ['suratTugas', 'undanganSumpah', 'baInventaris', 'dokumentasi', 'laporan'];
+  else if (/kunjungan/.test(txt)) keys = ['suratTugas', 'daftarHadir', 'notulen', 'dokumentasi', 'laporan', 'pengantar'];
   else if (e.kategori === 'Lapangan') keys = ['suratTugas', 'daftarHadir', 'dokumentasi', 'laporan', 'pengantar'];
-  else if (e.kategori === 'Rapat') keys = ['undangan', 'daftarHadir', 'notulen', 'dokumentasi', 'laporan'];
   else if (e.kategori === 'Laporan') keys = ['laporan', 'pengantar', 'dokumentasi'];
   else if (e.kategori === 'Pelatihan') keys = ['suratTugas', 'undangan', 'daftarHadir', 'dokumentasi', 'laporan'];
   else keys = ['suratTugas', 'undangan', 'daftarHadir', 'laporan'];
@@ -1255,7 +1271,7 @@ async function runAi(id) {
 }
 function aiHtml(id) {
   const r = S.ai; const TC = { Sebelum: '#6d5dfc', Saat: '#22a3e6', Sesudah: '#16b981' };
-  return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><small style="color:var(--muted);flex:1">${r.sumber === 'gemini' ? '🤖 Dihasilkan Google Gemini' : '📚 Template format BHP Medan (isi GEMINI_API_KEY untuk analisis AI penuh)'} · ${r.docs.length} dokumen</small>
+  return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><small style="color:var(--muted);flex:1">${r.sumber === 'claude' ? '✨ Dihasilkan Claude' + ((r.contoh || []).length ? ' · meniru ' + r.contoh.length + ' contoh dari Drive: ' + esc(r.contoh.join(', ')) : '') : r.sumber === 'gemini' ? '🤖 Dihasilkan Google Gemini' : '📚 Template format BHP Medan (isi ANTHROPIC_API_KEY untuk analisis AI penuh)'} · ${r.docs.length} dokumen</small>
     <button class="btn btn-ghost" onclick="aiToTodo('${id}')">☑ Masukkan ke To Do</button><button class="btn btn-primary" onclick="aiCreateAll('${id}')">📄 Buat semua dokumen</button></div>
     ${r.docs.map((d, i) => `<div class="ai-doc"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1">📄 ${esc(d.nama)}</b>
       <span class="tag" style="background:${soft(TC[d.tahap] || '#888888')};color:${TC[d.tahap] || '#888'}">${esc(d.tahap || '')}</span>
