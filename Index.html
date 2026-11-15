@@ -81,8 +81,24 @@ button{cursor:pointer;border:0;background:none}
 .search{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:0 12px;height:38px;min-width:200px}
 .search input{border:0;background:none;outline:none;width:100%}
 kbd{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted);background:var(--card-solid)}
-.quick{border-radius:18px;padding:6px 6px 6px 16px;display:flex;align-items:center;gap:10px}
-.quick input{flex:1;border:0;background:none;outline:none;padding:10px 0}
+.quick{border-radius:16px;padding:8px 8px 8px 12px;display:flex;align-items:center;gap:12px}
+.brief{display:flex;gap:8px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.brief::-webkit-scrollbar{display:none}
+.bi{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);white-space:nowrap;font-size:13px;cursor:pointer;flex:none;max-width:340px}
+.bi:hover{border-color:var(--gold)}.bi b{font-size:15px}.bi small{color:var(--muted)}
+.bi span.t{overflow:hidden;text-overflow:ellipsis}
+.bi.next{background:var(--gold-soft);border-color:#ecd9a8}.bi.late b{color:var(--danger)}
+.qa{display:flex;gap:6px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:3px 3px 3px 12px;width:min(300px,34%);flex:none}
+.qa input{flex:1;min-width:0;border:0;background:none;outline:none;padding:7px 0;font-size:13px}
+.qa .btn{padding:6px 12px;font-size:16px}
+.vmore{position:relative}.vmore summary{list-style:none;cursor:pointer;padding:7px 12px;border-radius:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);background:var(--bg2)}
+.vmore summary::-webkit-details-marker{display:none}.vmore summary.on{background:var(--navy);color:#fff}
+.vmore>div{position:absolute;top:110%;left:0;z-index:20;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column;min-width:180px}
+.vmore>div button{text-align:left;padding:9px 10px;border-radius:9px;font-weight:600}.vmore>div button:hover,.vmore>div button.on{background:var(--accent-soft)}
+.hol{font-size:10.5px;font-weight:700;color:var(--danger);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
+.cell.libur .num{color:var(--danger)}
+@media (min-width:901px){.cell .heat{display:none!important}.top{flex-wrap:nowrap}.top .btn,.seg button,.vmore summary{white-space:nowrap}.seg button{padding:7px 10px}.top h1{margin:0 4px;font-size:20px}.top .search{min-width:150px;flex:0 1 240px}.top kbd,.live span{display:none}.top .grow{min-width:0}}
+.cats{display:grid;grid-template-columns:1fr 1fr;gap:0 4px}.cats label{padding:5px 6px;font-size:13px;gap:7px}.cats .n{font-size:11px}
 .quick .hint{font-size:12px;color:var(--muted)}
 .view{flex:1;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-height:0;position:relative}
 .avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;flex:none}
@@ -250,7 +266,7 @@ kbd{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6p
   .top{padding:8px}.top h1{font-size:18px;margin:0 4px;order:-1;flex:1}
   .top .hide-m{display:none}
   .search{min-width:0;flex:1;order:5;width:100%}
-  .quick .hint{display:none}
+  .quick{flex-direction:column;align-items:stretch;gap:8px}.qa{width:100%}
   .dow{padding:8px 6px 4px}.dow div{padding:0;text-align:center}
   .month{gap:3px;padding:0 6px 6px}
   .cell{padding:3px;border-radius:10px;align-items:center}
@@ -325,8 +341,9 @@ svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
       <h1 id="title"></h1>
       <div class="seg hide-m" id="seg">
         <button data-v="month">Bulan</button><button data-v="week">Minggu</button><button data-v="agenda">Agenda</button><button data-v="todo">To Do</button>
-        <button data-v="board">Papan</button><button data-v="stats">Statistik</button><button data-v="log">Log</button>
       </div>
+      <details class="vmore hide-m" id="vmore"><summary id="vmoreLbl">Lainnya ▾</summary>
+        <div><button data-v="board">📋 Papan Kanban</button><button data-v="stats">📊 Statistik</button><button data-v="log">📜 Log Aktivitas</button></div></details>
       <div class="grow hide-m"></div>
       <div class="search"><svg><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="q" placeholder="Cari kegiatan, lokasi, orang…" oninput="render()"><kbd class="hide-m">Ctrl K</kbd></div>
@@ -337,10 +354,9 @@ svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
     </div>
 
     <div class="quick glass">
-      <span>✨</span>
-      <input id="quick" placeholder='Tambah cepat: "Rapat evaluasi besok 09:00-11:00 @Aula #Rapat !tinggi"' onkeydown="if(event.key==='Enter')quickAdd()">
-      <span class="hint">Enter ↵</span>
-      <button class="btn btn-primary" onclick="quickAdd()">Tambah</button>
+      <div class="brief" id="brief"></div>
+      <div class="qa"><input id="quick" placeholder='✨ Tambah cepat, mis. "Rapat besok 09:00 @Aula #Rapat"' title='Ketik lalu Enter. Contoh: "Rapat evaluasi besok 09:00-11:00 @Aula #Rapat !tinggi"' onkeydown="if(event.key==='Enter')quickAdd()">
+      <button class="btn btn-primary" onclick="quickAdd()" title="Tambah (Enter)">＋</button></div>
     </div>
 
     <section class="view glass" id="view"></section>
@@ -547,8 +563,39 @@ async function refresh(silent) {
 }
 
 /* ============================================================ render */
+/* Hari libur nasional bertanggal tetap. Libur keagamaan yang tanggalnya berubah tiap tahun
+ * dapat dicatat sebagai kegiatan kategori Cuti/Lainnya. */
+const LIBUR = { '01-01': 'Tahun Baru Masehi', '05-01': 'Hari Buruh', '06-01': 'Hari Lahir Pancasila', '08-17': 'HUT Kemerdekaan RI', '12-25': 'Hari Natal' };
+function libur(k) { return LIBUR[k.slice(5)] || ''; }
+/* Ringkasan cepat di atas kalender: hari ini, kegiatan berikutnya, tugas terlambat, minggu ini. */
+function renderBrief() {
+  const el = document.getElementById('brief'); if (!el) return;
+  const t = todayKey(), now = new Date(), hm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const aktif = S.events.filter(e => e.status !== 'Dibatalkan');
+  const hariIni = aktif.filter(e => e.mulai <= t && e.selesai >= t);
+  const next = aktif.filter(e => e.status !== 'Selesai' && (e.mulai > t || (e.mulai === t && (e.seharian || !e.jamMulai || (e.jamSelesai || e.jamMulai) >= hm))))
+    .sort((a, b) => (a.mulai + (a.jamMulai || '00:00')).localeCompare(b.mulai + (b.jamMulai || '00:00')))[0];
+  const late = aktif.filter(e => e.selesai < t).reduce((n, e) => n + (e.checklist || []).filter(c => !c.d).length, 0);
+  const wEnd = addDays(t, 6 - now.getDay()), minggu = aktif.filter(e => e.mulai <= wEnd && e.selesai >= t).length;
+  let when = '';
+  if (next) {
+    const dd = dayDiff(t, next.mulai);
+    if (dd === 0 && next.jamMulai && !next.seharian) {
+      const [h, m] = next.jamMulai.split(':').map(Number), mins = h * 60 + m - (now.getHours() * 60 + now.getMinutes());
+      when = mins <= 0 ? 'sedang berlangsung' : mins < 60 ? `${mins} menit lagi` : `pukul ${next.jamMulai}`;
+    } else when = dd === 0 ? 'hari ini' : dd === 1 ? 'besok' + (next.jamMulai ? ' ' + next.jamMulai : '') : `${HR[parse(next.mulai).getDay()]}, ${parse(next.mulai).getDate()} ${BLN[parse(next.mulai).getMonth()].slice(0, 3)}`;
+  }
+  const hol = libur(t);
+  el.innerHTML = `<div class="bi" onclick="goToday()" title="Lihat hari ini"><b>${hariIni.length}</b><small>hari ini${hol ? ' · 🇮🇩 ' + hol : ''}</small></div>`
+    + (next ? `<div class="bi next" onclick="openDetail('${next.id}')" title="${esc(next.judul)}"><small>Berikutnya</small><span class="t"><b style="font-size:13px">${esc(next.judul)}</b></span><small>· ${when}</small></div>` : '')
+    + `<div class="bi ${late ? 'late' : ''}" onclick="setView('todo')" title="Buka To Do"><b>${late}</b><small>tugas terlambat</small></div>`
+    + `<div class="bi" onclick="setView('agenda')" title="Buka Agenda"><b>${minggu}</b><small>minggu ini</small></div>`;
+}
 function render() {
-  document.querySelectorAll('#seg button,#bnav button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
+  document.querySelectorAll('#seg button,#bnav button,#vmore button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
+  const vm = { board: '📋 Papan', stats: '📊 Statistik', log: '📜 Log' }[S.view]; const vl = document.getElementById('vmoreLbl');
+  if (vl) { vl.textContent = (vm || 'Lainnya') + ' ▾'; vl.classList.toggle('on', !!vm); }
+  renderBrief();
   renderSide();
   const v = document.getElementById('view');
   const c = S.cursor;
@@ -589,9 +636,11 @@ function renderMonth(v) {
   for (let i = 0; i < weeks * 7; i++) {
     const d = new Date(start); d.setDate(start.getDate() + i); const k = key(d);
     const ev = eventsOn(k, list);
-    const cls = [d.getMonth() !== m && 'out', k === todayKey() && 'today', (d.getDay() === 0) && 'we', k === S.sel && 'sel'].filter(Boolean).join(' ');
+    const hol = libur(k);
+    const cls = [d.getMonth() !== m && 'out', k === todayKey() && 'today', (d.getDay() === 0) && 'we', hol && 'libur', k === S.sel && 'sel'].filter(Boolean).join(' ');
     h += `<div class="cell ${cls}" data-k="${k}" onclick="cellClick(event,'${k}')" ondragover="dragOver(event)" ondragleave="this.classList.remove('drop')" ondrop="dropDay(event,'${k}')">
       <div class="num">${d.getDate()}</div>
+      ${hol ? `<div class="hol" title="${hol}">🇮🇩 ${hol}</div>` : ''}
       ${ev.length ? `<div class="heat">${ev.slice(0, 4).map(e => `<i style="background:${color(e)};opacity:1"></i>`).join('')}</div>` : ''}
       ${ev.slice(0, 3).map(e => chip(e)).join('')}
       ${ev.length > 3 ? `<div class="more">+${ev.length - 3} lainnya</div>` : ''}
@@ -606,8 +655,8 @@ function renderMonth(v) {
 function chip(e) {
   const c = color(e);
   return `<div class="chip ${e.status === 'Selesai' ? 'done' : ''}" draggable="true" ondragstart="dragStart(event,'${e.id}')"
-    onclick="event.stopPropagation();openDetail('${e.id}')" style="background:${soft(c)};border-color:${c};color:${c}"
-    title="${esc(e.judul)} • ${timeStr(e)}">${e.jamMulai && !e.seharian ? e.jamMulai + ' ' : ''}${esc(e.judul)}</div>`;
+    onclick="event.stopPropagation();openDetail('${e.id}')" style="background:${soft(c, .1)};border-color:${c};color:var(--text)"
+    title="${esc(e.judul)} • ${timeStr(e)}">${e.jamMulai && !e.seharian ? `<b style="color:${c}">${e.jamMulai}</b> ` : ''}${esc(e.judul)}</div>`;
 }
 function rowHtml(e) {
   const c = color(e), nf = filesOf(e.id).length, nc = commentsOf(e.id).length;
@@ -1347,7 +1396,8 @@ function toast(msg, action, fn) {
 // Tampilan hanya mode terang (light) agar seragam dengan aplikasi BHP Medan lainnya.
 function toggleTheme() { document.documentElement.dataset.theme = 'light'; }
 
-document.querySelectorAll('#seg button,#bnav button[data-v]:not([data-v=more])').forEach(b => b.addEventListener('click', () => setView(b.dataset.v)));
+document.querySelectorAll('#seg button,#vmore button,#bnav button[data-v]:not([data-v=more])').forEach(b => b.addEventListener('click', () => { document.getElementById('vmore').open = false; setView(b.dataset.v); }));
+document.addEventListener('click', e => { const d = document.getElementById('vmore'); if (d.open && !d.contains(e.target)) d.open = false; });
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
   if (e.key === 'Escape') { closeViewer(); closePalette(); closeModal(); return; }
@@ -1393,6 +1443,7 @@ document.addEventListener('keydown', e => {
   document.addEventListener('dragstart', hide); document.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
 })();
 
+setInterval(() => { try { renderBrief(); } catch (e) {} }, 60000);
 /* ============================================================ boot */
 (async function init() {
   toggleTheme(); document.getElementById('brandLogo').src = LOGO_PENGAYOMAN;
