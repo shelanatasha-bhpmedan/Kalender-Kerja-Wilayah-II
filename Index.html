@@ -238,6 +238,21 @@ kbd{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6p
 .daypop button:hover{background:var(--accent-soft)}
 .daypop i{width:4px;align-self:stretch;border-radius:4px;flex:none}
 .daypop b{display:block;font-size:13px;line-height:1.3}.daypop small{color:var(--muted);font-size:11.5px}
+.rk-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.rk-kpi div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.rk-kpi b{display:block;font-size:26px;letter-spacing:-.02em}.rk-kpi small{color:var(--muted)}
+.rk-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.rk-bar .pill{padding:7px 12px;border-radius:20px;border:1px solid var(--line);background:#fff;font-weight:600;font-size:12.5px}
+.rk-bar .pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.rk-tbl{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:13px}
+.rk-tbl th{background:var(--bg2);text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:9px 10px;border-bottom:1px solid var(--line)}
+.rk-tbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+.rk-tbl tr:last-child td{border-bottom:0}.rk-tbl tr.ev:hover td{background:#fafbfd;cursor:pointer}
+.rk-files{display:flex;flex-direction:column;gap:3px;margin-top:6px}
+.rk-files a{font-size:12px;color:var(--text);text-decoration:none;cursor:pointer}.rk-files a:hover{text-decoration:underline}
+.rk-dup{font-size:12px;background:var(--gold-soft);border:1px solid #ecd9a8;border-radius:12px;padding:8px 12px;margin-bottom:10px}
+.rk-nofile{color:var(--danger);font-weight:600;font-size:12px}
+@media (max-width:900px){.rk-tbl .hm{display:none}}
 /* palette & toast */
 .palette{position:fixed;inset:0;z-index:95;background:rgba(10,10,30,.4);backdrop-filter:blur(3px);display:none;justify-content:center;padding-top:12vh}
 .palette.show{display:flex}
@@ -340,7 +355,7 @@ svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
       <button class="btn btn-soft hide-m" onclick="goToday()">Hari ini</button>
       <h1 id="title"></h1>
       <div class="seg hide-m" id="seg">
-        <button data-v="month">Bulan</button><button data-v="week">Minggu</button><button data-v="agenda">Agenda</button><button data-v="todo">To Do</button>
+        <button data-v="month">Bulan</button><button data-v="week">Minggu</button><button data-v="agenda">Agenda</button><button data-v="todo">To Do</button><button data-v="rekap">Rekap</button>
       </div>
       <details class="vmore hide-m" id="vmore"><summary id="vmoreLbl">Lainnya ▾</summary>
         <div><button data-v="board">📋 Papan Kanban</button><button data-v="stats">📊 Statistik</button><button data-v="log">📜 Log Aktivitas</button></div></details>
@@ -368,7 +383,7 @@ svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
   <button data-v="month"><svg><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Bulan</button>
   <button data-v="agenda"><svg><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Agenda</button>
   <button data-v="todo"><svg><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>To Do</button>
-  <button data-v="stats"><svg><path d="M3 3v18h18M7 15l4-4 4 4 5-6"/></svg>Statistik</button>
+  <button data-v="rekap"><svg><path d="M9 17v-6M13 17V7M17 17v-3M4 4v16h16"/></svg>Rekap</button>
   <button data-v="more" onclick="document.getElementById('side').classList.toggle('open')"><svg><path d="M4 6h16M4 12h16M4 18h16"/></svg>Menu</button>
 </nav>
 
@@ -601,7 +616,7 @@ function render() {
   const c = S.cursor;
   const title = document.getElementById('title');
   title.innerHTML = `${BLN[c.getMonth()]} <span>${c.getFullYear()}</span>`;
-  ({ month: renderMonth, week: renderWeek, agenda: renderAgenda, todo: renderTodo, board: renderBoard, stats: renderStats, log: renderLog }[S.view] || renderMonth)(v);
+  ({ month: renderMonth, week: renderWeek, agenda: renderAgenda, todo: renderTodo, rekap: renderRekap, board: renderBoard, stats: renderStats, log: renderLog }[S.view] || renderMonth)(v);
 }
 
 function renderSide() {
@@ -1368,7 +1383,7 @@ function exportICS() {
 
 /* ---------- command palette */
 const CMDS = [
-  ['✨', 'Kegiatan baru', () => openForm(), 'N'], ['🔗', 'Bagikan kegiatan di tanggal terpilih', () => shareDay(S.sel), ''], ['📅', 'Tampilan Bulan', () => setView('month'), 'M'], ['🗓️', 'Tampilan Minggu', () => setView('week'), 'W'],
+  ['✨', 'Kegiatan baru', () => openForm(), 'N'], ['📊', 'Rekap bulan ini (kegiatan & lampiran)', () => setView('rekap'), 'R'], ['🔗', 'Bagikan kegiatan di tanggal terpilih', () => shareDay(S.sel), ''], ['📅', 'Tampilan Bulan', () => setView('month'), 'M'], ['🗓️', 'Tampilan Minggu', () => setView('week'), 'W'],
   ['📋', 'Tampilan Agenda', () => setView('agenda'), 'A'], ['✅', 'To Do List', () => setView('todo'), 'O'], ['🧩', 'Papan status (Kanban)', () => setView('board'), 'B'], ['📊', 'Statistik & dashboard', () => setView('stats'), 'S'],
   ['📜', 'Log aktivitas', () => setView('log'), 'L'], ['🎯', 'Ke hari ini', goToday, 'T'],
   ['⬇️', 'Ekspor CSV', exportCSV, ''], ['📆', 'Ekspor .ics', exportICS, ''], ['📁', 'Buka folder Google Drive', () => window.open(S.rootUrl, '_blank'), ''],
@@ -1402,7 +1417,7 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); return; }
   if (e.key === 'Escape') { closeViewer(); closePalette(); closeModal(); return; }
   if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || document.getElementById('ov').classList.contains('show')) return;
-  const k = e.key.toLowerCase(); const m = { n: () => openForm(), t: goToday, m: () => setView('month'), w: () => setView('week'), a: () => setView('agenda'), o: () => setView('todo'), b: () => setView('board'), s: () => setView('stats'), l: () => setView('log'), arrowleft: () => shift(-1), arrowright: () => shift(1), '/': () => document.getElementById('q').focus() };
+  const k = e.key.toLowerCase(); const m = { n: () => openForm(), t: goToday, m: () => setView('month'), w: () => setView('week'), a: () => setView('agenda'), o: () => setView('todo'), r: () => setView('rekap'), b: () => setView('board'), s: () => setView('stats'), l: () => setView('log'), arrowleft: () => shift(-1), arrowright: () => shift(1), '/': () => document.getElementById('q').focus() };
   if (m[k]) { e.preventDefault(); m[k](); }
 });
 // swipe kiri/kanan di HP untuk ganti bulan
@@ -1444,6 +1459,70 @@ document.addEventListener('keydown', e => {
 })();
 
 setInterval(() => { try { renderBrief(); } catch (e) {} }, 60000);
+/* ============================================================ rekap bulanan
+ * Menghitung kegiatan & lampiran pada bulan yang sedang ditampilkan, langsung dari data
+ * terbaru (ikut sinkron realtime). Entri yang sama persis (judul, tanggal, jam, lokasi, dan
+ * peserta/orangnya sama) dihitung satu kali; lampirannya digabung tanpa duplikat. */
+const norm = x => String(x || '').toLowerCase().replace(/\s+/g, ' ').trim();
+function rekapData(y, m) {
+  const awal = key(new Date(y, m, 1)), akhir = key(new Date(y, m + 1, 0));
+  const evs = S.events.filter(e => e.mulai <= akhir && e.selesai >= awal);
+  const grup = new Map();
+  evs.forEach(e => {
+    const k = [norm(e.judul), e.mulai, e.selesai, e.seharian ? '' : e.jamMulai, e.seharian ? '' : e.jamSelesai, norm(e.lokasi),
+      (e.peserta || []).map(norm).sort().join(',')].join('|');
+    (grup.get(k) || grup.set(k, []).get(k)).push(e);
+  });
+  const rows = [...grup.values()].map(g => {
+    g.sort((a, b) => filesOf(b.id).length - filesOf(a.id).length || String(a.dibuatPada).localeCompare(String(b.dibuatPada)));
+    const seen = new Set(), files = [];
+    g.forEach(e => filesOf(e.id).forEach(f => { const fk = norm(f.nama) + '|' + (f.ukuran || ''); if (!seen.has(fk)) { seen.add(fk); files.push(f); } }));
+    return { e: g[0], dup: g.length - 1, files };
+  }).sort((a, b) => (a.e.mulai + (a.e.jamMulai || '')).localeCompare(b.e.mulai + (b.e.jamMulai || '')));
+  return { rows, dup: rows.reduce((n, r) => n + r.dup, 0) };
+}
+function renderRekap(v) {
+  const c = S.cursor, y = c.getFullYear(), m = c.getMonth(), f = S.rekapF || 'semua';
+  const { rows, dup } = rekapData(y, m);
+  const nFile = rows.reduce((n, r) => n + r.files.length, 0), tanpa = rows.filter(r => !r.files.length).length;
+  const st = n => rows.filter(r => r.e.status === n).length;
+  const list = rows.filter(r => f === 'semua' || (f === 'ada' ? r.files.length : f === 'tanpa' ? !r.files.length : r.e.status === f));
+  const tgl = e => fmtShort(e.mulai) + (e.selesai !== e.mulai ? ' – ' + fmtShort(e.selesai) : '');
+  v.innerHTML = `<div class="scroll">
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px"><h3 style="margin:0">📊 Rekap ${BLN[m]} ${y}</h3>
+      <small style="color:var(--muted)">Diperbarui otomatis · gunakan ‹ › untuk ganti bulan</small>
+      <span style="flex:1"></span><button class="btn btn-soft" onclick="exportRekap()">⬇️ Unduh CSV</button></div>
+    <div class="rk-kpi">
+      <div><small>Total kegiatan</small><b>${rows.length}</b></div>
+      <div><small>Selesai</small><b style="color:var(--ok)">${st('Selesai')}</b></div>
+      <div><small>Direncanakan / berjalan</small><b>${st('Direncanakan') + st('Berjalan')}</b></div>
+      <div><small>Total lampiran</small><b>${nFile}</b></div>
+      <div><small>Kegiatan tanpa lampiran</small><b style="color:${tanpa ? 'var(--danger)' : 'var(--ok)'}">${tanpa}</b></div>
+    </div>
+    ${dup ? `<div class="rk-dup">🔁 <b>${dup} entri ganda</b> (kegiatan sama persis: judul, tanggal, jam, lokasi, dan orangnya sama) tidak dihitung dua kali. Lampirannya tetap digabung.</div>` : ''}
+    <div class="rk-bar">${[['semua', 'Semua'], ['ada', '📎 Ada lampiran'], ['tanpa', '⚠️ Tanpa lampiran'], ['Selesai', '✅ Selesai'], ['Direncanakan', '🗓️ Direncanakan']]
+      .map(([k, l]) => `<button class="pill ${f === k ? 'on' : ''}" onclick="S.rekapF='${k}';render()">${l}</button>`).join('')}
+      <small style="color:var(--muted)">${list.length} kegiatan ditampilkan</small></div>
+    ${list.length ? `<table class="rk-tbl"><thead><tr><th>No</th><th>Tanggal</th><th>Kegiatan &amp; lampiran</th><th class="hm">Kategori</th><th class="hm">Status</th><th>Lampiran</th></tr></thead><tbody>
+      ${list.map((r, i) => `<tr class="ev" onclick="openDetail('${r.e.id}')"><td>${i + 1}</td><td style="white-space:nowrap">${tgl(r.e)}<br><small style="color:var(--muted)">${timeStr(r.e)}</small></td>
+        <td><b>${esc(r.e.judul)}</b>${r.dup ? ` <span class="tag" style="background:var(--gold-soft);color:#8a6a1c">+${r.dup} ganda</span>` : ''}${r.e.lokasi ? `<br><small style="color:var(--muted)">📍 ${esc(r.e.lokasi)}</small>` : ''}
+          ${r.files.length ? `<div class="rk-files">${r.files.map(x => `<a onclick="event.stopPropagation();openViewer('${x.id}')">${fIcon(x)} ${esc(x.nama)}</a>`).join('')}</div>` : ''}</td>
+        <td class="hm"><span class="tag" style="background:${soft(color(r.e))};color:${color(r.e)}">${esc(r.e.kategori)}</span></td>
+        <td class="hm">${esc(r.e.status)}</td>
+        <td style="text-align:center">${r.files.length ? `<b>${r.files.length}</b>` : '<span class="rk-nofile">0</span>'}</td></tr>`).join('')}
+      </tbody></table>` : `<div class="empty"><b>🗂️</b>Tidak ada kegiatan untuk filter ini.</div>`}
+    <p style="margin-top:12px"><a style="cursor:pointer;color:var(--muted);font-size:12px" onclick="setView('stats')">Lihat statistik lengkap →</a></p></div>`;
+}
+function exportRekap() {
+  const c = S.cursor, { rows } = rekapData(c.getFullYear(), c.getMonth());
+  const q = x => '"' + String(x ?? '').replace(/"/g, '""') + '"';
+  const csv = [['No', 'Tanggal Mulai', 'Tanggal Selesai', 'Waktu', 'Kegiatan', 'Lokasi', 'Kategori', 'Status', 'Jumlah Lampiran', 'Nama Lampiran']]
+    .concat(rows.map((r, i) => [i + 1, r.e.mulai, r.e.selesai, timeStr(r.e), r.e.judul, r.e.lokasi, r.e.kategori, r.e.status, r.files.length, r.files.map(f => f.nama).join('; ')]))
+    .map(r => r.map(q).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
+  a.download = `Rekap Kegiatan ${BLN[c.getMonth()]} ${c.getFullYear()}.csv`; a.click();
+}
+
 /* ============================================================ boot */
 (async function init() {
   toggleTheme(); document.getElementById('brandLogo').src = LOGO_PENGAYOMAN;
