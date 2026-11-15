@@ -27,7 +27,7 @@ Dibangun sebagai **Google Apps Script Web App**: data di Google Sheets, lampiran
 
 ### ✨ Mengaktifkan AI Claude (disarankan)
 1. Buat API key di <https://platform.claude.com/settings/keys>.
-2. Di Apps Script, buka **Setelan proyek → Properti skrip**, lalu tambahkan `ANTHROPIC_API_KEY` = kunci Anda. Model bisa diganti lewat properti `CLAUDE_MODEL` (default `claude-opus-5-5`).
+2. Di Apps Script, buka **Setelan proyek → Properti skrip**, lalu tambahkan `ANTHROPIC_API_KEY` = kunci Anda. Model bisa diganti lewat properti `CLAUDE_MODEL` (default `claude-opus-5-5`), dan tingkat pemikiran lewat `CLAUDE_EFFORT` (`low`/`medium`/`high`, default `low` agar cepat dan hemat kredit).
 3. Simpan contoh surat BHP Medan (Google Docs atau PDF) di folder **Contoh Dokumen** di dalam folder *Kalender Kerja Wilayah II* di Drive. Folder ini dibuat otomatis saat AI Dokumen pertama kali dipakai. Bila contoh disimpan di folder lain, isi properti `CONTOH_FOLDER_ID` dengan ID folder tersebut. Beri nama file yang jelas, misalnya `Contoh Nota Dinas Rapat Internal`, agar contoh yang paling cocok dipilih lebih dulu. File Word (.docx) perlu disimpan sebagai Google Docs terlebih dahulu.
 
 Aturan jenis surat yang dipakai AI: rapat internal pegawai BHP memakai **Nota Dinas**; **Surat Undangan** dipakai bila rapat diadakan di luar BHP atau BHP mengundang pihak luar; pegawai yang berangkat ke luar kantor memakai **Surat Tugas**.
