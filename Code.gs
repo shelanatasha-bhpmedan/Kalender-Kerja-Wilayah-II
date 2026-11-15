@@ -538,7 +538,12 @@ function claudeDocs_(ev, key) {
   if (hasil.nama.length) content.push({ type: 'text', text: 'Berkas lain di Drive yang namanya relevan (isi tidak dibaca): ' + hasil.nama.join('; ') });
   content.push({ type: 'text', text: 'Tentukan 3-5 dokumen terpenting yang perlu disiapkan (sebelum, saat, dan sesudah) untuk kegiatan berikut, ' +
     'lalu buat draf isi ringkas tetapi siap pakai untuk tiap dokumen (cukup kerangka utama, tanpa pengulangan) dalam bahasa Indonesia formal sesuai format BHP Medan. Isi data kegiatan yang diketahui, ' +
-    'gunakan [....] untuk yang harus dilengkapi. Pada "alasan", sebutkan singkat kenapa dokumen itu yang dipakai (mis. kenapa Nota Dinas, bukan Undangan).\n\nKegiatan: ' +
+    'gunakan [....] untuk yang harus dilengkapi. Pada "alasan", sebutkan singkat kenapa dokumen itu yang dipakai (mis. kenapa Nota Dinas, bukan Undangan).\n\n' +
+    'GAYA ISI: Agenda/acara cukup SINGKAT dan umum (satu kalimat, atau paling banyak 2-3 poin pendek), jangan merinci tugas tiap seksi atau anggaran. ' +
+    'Perhatikan TANGGAL HARI INI dan jarak ke kegiatan utama (mis. tanggal webinar/acara pokok yang disebut di berkas Drive): bila rapat ini diadakan ' +
+    'beberapa hari sebelum kegiatan utama, sebut acaranya sebagai rapat persiapan (mis. "Rapat persiapan pelaksanaan Webinar ... tanggal ..."), ' +
+    'bukan pembahasan rinci.\n\nTanggal hari ini: ' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE, d MMMM yyyy') + ' (' +
+    Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd') + ').\n\nKegiatan: ' +
     JSON.stringify({
       judul: ev.judul, deskripsi: ev.deskripsi, tanggal: ev.mulai + (ev.selesai !== ev.mulai ? ' s/d ' + ev.selesai : ''),
       jam: ev.seharian ? 'seharian' : ev.jamMulai + '-' + ev.jamSelesai, lokasi: ev.lokasi, kategori: ev.kategori,
