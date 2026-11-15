@@ -642,40 +642,45 @@ function apiCreateDoc(eventId, nama, isi, logoB64) {
   if (!ev) throw new Error('Kegiatan tidak ditemukan');
   const doc = DocumentApp.create(nama + ' — ' + ev.judul);
   const body = doc.getBody();
-  body.setMarginTop(36).setMarginBottom(56).setMarginLeft(72).setMarginRight(56); // pt (A4, kiri 2,54 cm)
-  const font = function (el, size, bold) { el.setFontFamily('Arial').setFontSize(size).setBold(!!bold); return el; };
+  // Catatan: sebagian setter DocumentApp (mis. Paragraph.setText) tidak mengembalikan objek,
+  // jadi setiap pemanggilan ditulis terpisah (tanpa chaining) agar tidak error "null".
+  body.setMarginTop(36); body.setMarginBottom(56); body.setMarginLeft(72); body.setMarginRight(56); // pt (A4, kiri 2,54 cm)
+  const font = function (el, size, bold) { el.setFontFamily('Arial'); el.setFontSize(size); el.setBold(!!bold); return el; };
+  const rapat = function (p, align) { if (align) p.setAlignment(align); p.setSpacingBefore(0); p.setSpacingAfter(0); };
 
   // ---- kop: tabel 2 kolom tanpa garis (logo | teks)
   const tbl = body.insertTable(0, [['', '']]);
   tbl.setBorderWidth(0);
   tbl.setColumnWidth(0, 78);
   const cLogo = tbl.getCell(0, 0), cTeks = tbl.getCell(0, 1);
-  cLogo.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER).setPaddingLeft(0).setPaddingRight(4);
+  cLogo.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER); cLogo.setPaddingLeft(0); cLogo.setPaddingRight(4);
   cTeks.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
   if (logoB64) {
     try {
-      const img = cLogo.getChild(0).asParagraph().appendInlineImage(Utilities.newBlob(Utilities.base64Decode(logoB64), 'image/png', 'logo.png'));
-      const r = img.getHeight() / img.getWidth(); img.setWidth(68).setHeight(Math.round(68 * r));
-      cLogo.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+      const pLogo = cLogo.getChild(0).asParagraph();
+      const img = pLogo.appendInlineImage(Utilities.newBlob(Utilities.base64Decode(logoB64), 'image/png', 'logo.png'));
+      const r = img.getHeight() / img.getWidth(); img.setWidth(68); img.setHeight(Math.round(68 * r));
+      pLogo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
     } catch (e) { Logger.log('Logo gagal: ' + e); }
   }
   KOP_BHP_.forEach(function (k, i) {
-    const p = i === 0 ? cTeks.getChild(0).asParagraph() : cTeks.appendParagraph('');
-    p.setText(k.t).setAlignment(DocumentApp.HorizontalAlignment.CENTER).setSpacingBefore(0).setSpacingAfter(0).setLineSpacing(1);
+    const p = i === 0 ? cTeks.getChild(0).asParagraph() : cTeks.appendParagraph(k.t);
+    if (i === 0) p.setText(k.t);
+    rapat(p, DocumentApp.HorizontalAlignment.CENTER); p.setLineSpacing(1);
     font(p, k.s, k.b);
   });
   const garis = body.insertParagraph(1, '');
   garis.appendHorizontalRule();
-  garis.setSpacingBefore(2).setSpacingAfter(6);
+  garis.setSpacingBefore(2); garis.setSpacingAfter(6);
 
   // ---- isi surat
   const lines = buangKopTeks_(String(isi || '').split('\n'));
   let first = true;
   lines.forEach(function (line) {
     let p;
-    if (first) { p = body.getParagraphs()[body.getParagraphs().length - 1]; p.setText(line); first = false; }
+    if (first) { const ps = body.getParagraphs(); p = ps[ps.length - 1]; p.setText(line); first = false; }
     else p = body.appendParagraph(line);
-    p.setHeading(DocumentApp.ParagraphHeading.NORMAL).setSpacingBefore(0).setSpacingAfter(0).setLineSpacing(1.15);
+    p.setHeading(DocumentApp.ParagraphHeading.NORMAL); rapat(p); p.setLineSpacing(1.15);
     font(p, 12, false);
     const s = line.trim();
     // judul surat (mis. NOTA DINAS, SURAT TUGAS, NOTULEN) & nomornya: rata tengah, judul tebal
