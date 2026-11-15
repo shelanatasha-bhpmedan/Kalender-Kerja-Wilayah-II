@@ -553,7 +553,8 @@ function claudeDocs_(ev, key) {
     '(tugas: wali pengawas perwalian/pengampuan, penyumpahan wali, inventarisasi harta, kepailitan, harta tak terurus). ' +
     'Format surat dinas BHP Medan: kop "KEMENTERIAN HUKUM REPUBLIK INDONESIA / KANTOR WILAYAH SUMATERA UTARA / BALAI HARTA PENINGGALAN MEDAN / ' +
     'Jalan Listrik No. 10 Medan", nomor "W.2.AHU.AHU.1-<kode>-[....]", Sifat/Lampiran/Hal, "Yth. ...", penutup "Demikian ...", ' +
-    'tanda tangan "Kepala," lalu nama, dan Tembusan bila perlu. JANGAN tulis kop surat di draf (kop dengan logo dibuat otomatis); mulai isi dari judul/nomor surat.\n\n' + ATURAN_DOKUMEN_BHP;
+    'tanda tangan "Kepala," lalu nama Kepala BHP Medan: ' + (PROP.getProperty('KEPALA_NAMA') || 'Syafriadi Lubis') + ' (WAJIB ditulis lengkap, jangan [....]), dan Tembusan bila perlu. ' +
+    'Data tetap kantor (nama instansi, alamat, nama Kepala) selalu diisi, jangan diganti [....]; [....] hanya untuk data yang benar-benar belum diketahui seperti nomor surat. JANGAN tulis kop surat di draf (kop dengan logo dibuat otomatis); mulai isi dari judul/nomor surat.\n\n' + ATURAN_DOKUMEN_BHP;
   const schema = { type: 'object', additionalProperties: false, required: ['docs'], properties: { docs: { type: 'array', items: {
     type: 'object', additionalProperties: false, required: ['nama', 'tahap', 'alasan', 'isi'],
     properties: { nama: { type: 'string' }, tahap: { type: 'string', enum: ['Sebelum', 'Saat', 'Sesudah'] }, alasan: { type: 'string' }, isi: { type: 'string' } } } } } };
