@@ -548,7 +548,7 @@ function claudeDocs_(ev, key) {
     '(tugas: wali pengawas perwalian/pengampuan, penyumpahan wali, inventarisasi harta, kepailitan, harta tak terurus). ' +
     'Format surat dinas BHP Medan: kop "KEMENTERIAN HUKUM REPUBLIK INDONESIA / KANTOR WILAYAH SUMATERA UTARA / BALAI HARTA PENINGGALAN MEDAN / ' +
     'Jalan Listrik No. 10 Medan", nomor "W.2.AHU.AHU.1-<kode>-[....]", Sifat/Lampiran/Hal, "Yth. ...", penutup "Demikian ...", ' +
-    'tanda tangan "Kepala," lalu nama, dan Tembusan bila perlu.\n\n' + ATURAN_DOKUMEN_BHP;
+    'tanda tangan "Kepala," lalu nama, dan Tembusan bila perlu. JANGAN tulis kop surat di draf (kop dengan logo dibuat otomatis); mulai isi dari judul/nomor surat.\n\n' + ATURAN_DOKUMEN_BHP;
   const schema = { type: 'object', additionalProperties: false, required: ['docs'], properties: { docs: { type: 'array', items: {
     type: 'object', additionalProperties: false, required: ['nama', 'tahap', 'alasan', 'isi'],
     properties: { nama: { type: 'string' }, tahap: { type: 'string', enum: ['Sebelum', 'Saat', 'Sesudah'] }, alasan: { type: 'string' }, isi: { type: 'string' } } } } } };
@@ -611,23 +611,74 @@ function geminiDocs_(ev, key) {
   return arr.filter(function (d) { return d && d.nama; }).slice(0, 8);
 }
 
-/** Membuat draf Google Docs di folder kegiatan dan mencatatnya sebagai lampiran. */
-function apiCreateDoc(eventId, nama, isi) {
+/** Membuat draf Google Docs di folder kegiatan dan mencatatnya sebagai lampiran.
+ *  Kop surat dibuat rapi seperti surat resmi BHP Medan: logo Pengayoman di kiri, teks kop rata tengah
+ *  (instansi tebal, alamat kecil), lalu garis pemisah. logoB64 = PNG logo (base64) dari tampilan. */
+const KOP_BHP_ = [
+  { t: 'KEMENTERIAN HUKUM REPUBLIK INDONESIA', b: true, s: 12 },
+  { t: 'KANTOR WILAYAH SUMATERA UTARA', b: true, s: 12 },
+  { t: 'BALAI HARTA PENINGGALAN MEDAN', b: true, s: 14 },
+  { t: 'Jalan Listrik No. 10 Medan', s: 9 },
+  { t: 'Telepon: (061) 451 7830, Faksimile: (061) 451 4328', s: 9 },
+  { t: 'Laman: www.bhpmedan.kemenkum.go.id, Pos-el: bhp.medan@kemenkum.go.id', s: 9 },
+];
+function buangKopTeks_(lines) {
+  // draf AI/template biasanya diawali kop berupa teks; dibuang karena diganti kop rapi
+  let i = 0;
+  const kopRe = /^(kementerian hukum|kantor wilayah|balai harta peninggalan|jalan listrik|jl\.? listrik|telepon|laman|pos-el|_{5,}|-{5,}|={5,})/i;
+  while (i < lines.length && i < 10 && (kopRe.test(lines[i].trim()) || (!lines[i].trim() && i < 7))) i++;
+  const out = i > 0 ? lines.slice(i) : lines.slice();
+  while (out.length > 1 && !out[0].trim()) out.shift();
+  return out;
+}
+function apiCreateDoc(eventId, nama, isi, logoB64) {
   const ev = readAll_('events').filter(function (e) { return e.id === eventId; })[0];
   if (!ev) throw new Error('Kegiatan tidak ditemukan');
   const doc = DocumentApp.create(nama + ' — ' + ev.judul);
   const body = doc.getBody();
-  // Paragraph.setText() tidak mengembalikan paragraf, jadi paragraf pertama diambil dulu baru diisi.
-  String(isi || '').split('\n').forEach(function (line, i) {
-    if (i === 0) {
-      const first = body.getParagraphs()[0] || body.appendParagraph('');
-      first.setText(line);
-      first.setHeading(DocumentApp.ParagraphHeading.HEADING1);
-    } else {
-      body.appendParagraph(line).setHeading(DocumentApp.ParagraphHeading.NORMAL);
-    }
+  body.setMarginTop(36).setMarginBottom(56).setMarginLeft(72).setMarginRight(56); // pt (A4, kiri 2,54 cm)
+  const font = function (el, size, bold) { el.setFontFamily('Arial').setFontSize(size).setBold(!!bold); return el; };
+
+  // ---- kop: tabel 2 kolom tanpa garis (logo | teks)
+  const tbl = body.insertTable(0, [['', '']]);
+  tbl.setBorderWidth(0);
+  tbl.setColumnWidth(0, 78);
+  const cLogo = tbl.getCell(0, 0), cTeks = tbl.getCell(0, 1);
+  cLogo.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER).setPaddingLeft(0).setPaddingRight(4);
+  cTeks.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
+  if (logoB64) {
+    try {
+      const img = cLogo.getChild(0).asParagraph().appendInlineImage(Utilities.newBlob(Utilities.base64Decode(logoB64), 'image/png', 'logo.png'));
+      const r = img.getHeight() / img.getWidth(); img.setWidth(68).setHeight(Math.round(68 * r));
+      cLogo.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    } catch (e) { Logger.log('Logo gagal: ' + e); }
+  }
+  KOP_BHP_.forEach(function (k, i) {
+    const p = i === 0 ? cTeks.getChild(0).asParagraph() : cTeks.appendParagraph('');
+    p.setText(k.t).setAlignment(DocumentApp.HorizontalAlignment.CENTER).setSpacingBefore(0).setSpacingAfter(0).setLineSpacing(1);
+    font(p, k.s, k.b);
+  });
+  const garis = body.insertParagraph(1, '');
+  garis.appendHorizontalRule();
+  garis.setSpacingBefore(2).setSpacingAfter(6);
+
+  // ---- isi surat
+  const lines = buangKopTeks_(String(isi || '').split('\n'));
+  let first = true;
+  lines.forEach(function (line) {
+    let p;
+    if (first) { p = body.getParagraphs()[body.getParagraphs().length - 1]; p.setText(line); first = false; }
+    else p = body.appendParagraph(line);
+    p.setHeading(DocumentApp.ParagraphHeading.NORMAL).setSpacingBefore(0).setSpacingAfter(0).setLineSpacing(1.15);
+    font(p, 12, false);
+    const s = line.trim();
+    // judul surat (mis. NOTA DINAS, SURAT TUGAS, NOTULEN) & nomornya: rata tengah, judul tebal
+    if (s && s.length <= 70 && s === s.toUpperCase() && /[A-Z]/.test(s) && !/[:|]/.test(s)) { p.setAlignment(DocumentApp.HorizontalAlignment.CENTER); font(p, 12, true); }
+    else if (/^NOMOR\b|^Nomor\s*:?\s*W\.2/i.test(s) && s.length < 70 && !/\t/.test(line)) p.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    else p.setAlignment(DocumentApp.HorizontalAlignment.JUSTIFY);
   });
   doc.saveAndClose();
+
   const file = DriveApp.getFileById(doc.getId());
   const root = DriveApp.getFolderById(PROP.getProperty('FOLDER_ID'));
   file.moveTo(getOrCreate_(getOrCreate_(root, ev.mulai.slice(0, 7)), ev.mulai + ' — ' + ev.judul.replace(/[\\/]/g, '-').slice(0, 80)));

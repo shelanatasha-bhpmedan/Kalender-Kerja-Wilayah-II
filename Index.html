@@ -1283,7 +1283,7 @@ function aiHtml(id) {
 async function aiToTodo(id) { await call('apiAddChecklist', id, S.ai.docs.map(d => 'Siapkan ' + d.nama)); toast('☑ Ditambahkan ke To Do List'); refresh(true); }
 async function aiCreate(id, i, quiet) {
   const d = S.ai.docs[i], b = document.getElementById('aiC' + i); if (b) { b.disabled = true; b.textContent = 'Membuat…'; }
-  try { const f = await call('apiCreateDoc', id, d.nama, d.isi); if (b) { b.textContent = '✅ Dibuat'; } if (!quiet) { toast('📄 ' + d.nama + ' dibuat di Google Drive', 'Buka', () => window.open(f.url, '_blank')); refresh(true); } }
+  try { const f = await call('apiCreateDoc', id, d.nama, d.isi, LOGO_PENGAYOMAN.split(',')[1]); if (b) { b.textContent = '✅ Dibuat'; } if (!quiet) { toast('📄 ' + d.nama + ' dibuat di Google Drive', 'Buka', () => window.open(f.url, '_blank')); refresh(true); } }
   catch (err) { toast('⚠️ ' + err.message); if (b) { b.disabled = false; b.textContent = 'Coba lagi'; } }
 }
 async function aiCreateAll(id) { for (let i = 0; i < S.ai.docs.length; i++) await aiCreate(id, i, true); toast('📄 Semua draf dokumen dibuat di folder Drive kegiatan'); await refresh(true); }
