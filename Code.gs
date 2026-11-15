@@ -439,15 +439,105 @@ function apiAiDocs(eventId) {
   const cur = readAll_('events').filter(function (e) { return e.id === eventId; })[0];
   if (!cur) throw new Error('Kegiatan tidak ditemukan');
   const ev = parseEvent_(cur);
-  const key = PROP.getProperty('GEMINI_API_KEY');
-  let docs = null, sumber = 'template';
-  if (key) {
-    try { docs = geminiDocs_(ev, key); sumber = 'gemini'; } catch (e) { Logger.log('Gemini gagal: ' + e); }
+  let docs = null, sumber = 'template', contoh = [];
+  const ckey = PROP.getProperty('ANTHROPIC_API_KEY');
+  if (ckey) {
+    try { const r = claudeDocs_(ev, ckey); docs = r.docs; contoh = r.contoh; sumber = 'claude'; } catch (e) { Logger.log('Claude gagal: ' + e); }
   }
-  // tanpa Gemini: frontend memakai template format BHP Medan (lihat BHP_TEMPLATES di Index.html)
+  const gkey = PROP.getProperty('GEMINI_API_KEY');
+  if ((!docs || !docs.length) && gkey) {
+    try { docs = geminiDocs_(ev, gkey); sumber = 'gemini'; } catch (e) { Logger.log('Gemini gagal: ' + e); }
+  }
+  // tanpa AI: frontend memakai template format BHP Medan (lihat bhpDocs di Index.html)
   if (!docs || !docs.length) return { sumber: 'template', docs: null };
-  log_('AI_DOKUMEN', ev, docs.map(function (d) { return d.nama; }).join(', '));
-  return { sumber: sumber, docs: docs };
+  log_('AI_DOKUMEN', ev, sumber + ': ' + docs.map(function (d) { return d.nama; }).join(', '));
+  return { sumber: sumber, docs: docs, contoh: contoh };
+}
+
+/* ---------------------------------------------------------------- AI Dokumen dengan Claude
+ * Script Property: ANTHROPIC_API_KEY (wajib), CLAUDE_MODEL (opsional, default claude-opus-5-5),
+ * CONTOH_FOLDER_ID (opsional; default folder "Contoh Dokumen" di folder utama aplikasi).
+ * Contoh dokumen dibaca dari Drive: Google Docs & teks (sebagai teks), PDF (dibaca langsung oleh Claude). */
+const ATURAN_DOKUMEN_BHP = [
+  'ATURAN JENIS SURAT DI BHP MEDAN (WAJIB DIIKUTI):',
+  '1. Rapat/pertemuan INTERNAL (semua peserta pegawai BHP Medan dan diadakan di kantor BHP Medan atau daring khusus pegawai) memakai NOTA DINAS, bukan Surat Undangan.',
+  '2. SURAT UNDANGAN hanya bila: (a) rapat/kegiatan diadakan di luar kantor BHP Medan dan BHP yang mengundang, atau (b) BHP mengundang orang/pihak luar ke BHP atau ke rapat daring BHP (mis. keluarga, wali/pengampu, ahli waris, kuasa hukum, kreditor/debitor, instansi lain).',
+  '3. Pegawai BHP yang berangkat ke luar kantor (pengadilan, Kanwil, pemda, lokasi harta, dll.) memerlukan SURAT TUGAS (dan SPPD/bukti kehadiran perjalanan dinas bila ada perjalanan).',
+  '4. Jangan menyarankan dokumen yang tidak relevan. Utamakan dokumen yang memang lazim dipakai BHP Medan.',
+  '5. Bila diberi CONTOH DOKUMEN dari Drive, tiru struktur, gaya bahasa, format nomor, kop, dan penutupnya semirip mungkin, tetapi isi dengan data kegiatan ini. Jangan menyalin data orang/perkara dari contoh.',
+].join('\n');
+
+function contohDokumen_(ev) {
+  let folder;
+  try {
+    const id = PROP.getProperty('CONTOH_FOLDER_ID');
+    folder = id ? DriveApp.getFolderById(id) : getOrCreate_(DriveApp.getFolderById(PROP.getProperty('ROOT_ID')), 'Contoh Dokumen');
+  } catch (e) { return []; }
+  const files = [];
+  const ambil = function (f) { const it = f.getFiles(); while (it.hasNext() && files.length < 80) files.push(it.next()); };
+  ambil(folder);
+  const subs = folder.getFolders(); while (subs.hasNext()) ambil(subs.next());
+  if (!files.length) return [];
+  const kata = (ev.judul + ' ' + ev.kategori + ' ' + ev.deskripsi + ' nota dinas undangan surat tugas laporan notulen daftar hadir berita acara')
+    .toLowerCase().split(/[^a-z0-9]+/).filter(function (w) { return w.length > 3; });
+  const skor = function (f) { const n = f.getName().toLowerCase(); return kata.reduce(function (s, w) { return s + (n.indexOf(w) >= 0 ? 1 : 0); }, 0); };
+  files.sort(function (a, b) { return skor(b) - skor(a); });
+  const out = []; let pdf = 0;
+  files.slice(0, 12).forEach(function (f) {
+    if (out.length >= 6) return;
+    const mime = f.getMimeType(), nama = f.getName();
+    try {
+      if (mime === MimeType.GOOGLE_DOCS) out.push({ nama: nama, teks: DocumentApp.openById(f.getId()).getBody().getText().slice(0, 8000) });
+      else if (/^text\//.test(mime)) out.push({ nama: nama, teks: f.getBlob().getDataAsString().slice(0, 8000) });
+      else if (mime === MimeType.PDF && pdf < 3 && f.getSize() < 4 * 1024 * 1024) { pdf++; out.push({ nama: nama, pdf: Utilities.base64Encode(f.getBlob().getBytes()) }); }
+    } catch (e) { Logger.log('Contoh dilewati ' + nama + ': ' + e); }
+  });
+  return out;
+}
+
+function claudeDocs_(ev, key) {
+  const contoh = contohDokumen_(ev);
+  const content = [];
+  contoh.forEach(function (c) {
+    content.push({ type: 'text', text: 'CONTOH DOKUMEN dari Drive BHP Medan: "' + c.nama + '"' });
+    if (c.pdf) content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: c.pdf }, title: c.nama });
+    else content.push({ type: 'text', text: c.teks });
+  });
+  content.push({ type: 'text', text: 'Tentukan 3-7 dokumen yang perlu disiapkan (sebelum, saat, dan sesudah) untuk kegiatan berikut, ' +
+    'lalu buat draf isi lengkap tiap dokumen dalam bahasa Indonesia formal sesuai format BHP Medan. Isi data kegiatan yang diketahui, ' +
+    'gunakan [....] untuk yang harus dilengkapi. Pada "alasan", sebutkan singkat kenapa dokumen itu yang dipakai (mis. kenapa Nota Dinas, bukan Undangan).\n\nKegiatan: ' +
+    JSON.stringify({
+      judul: ev.judul, deskripsi: ev.deskripsi, tanggal: ev.mulai + (ev.selesai !== ev.mulai ? ' s/d ' + ev.selesai : ''),
+      jam: ev.seharian ? 'seharian' : ev.jamMulai + '-' + ev.jamSelesai, lokasi: ev.lokasi, kategori: ev.kategori,
+      peserta: ev.peserta, checklist: ev.checklist.map(function (c) { return c.t; }),
+    }) });
+  const system = 'Kamu asisten administrasi Balai Harta Peninggalan (BHP) Medan, Kantor Wilayah Kementerian Hukum Sumatera Utara ' +
+    '(tugas: wali pengawas perwalian/pengampuan, penyumpahan wali, inventarisasi harta, kepailitan, harta tak terurus). ' +
+    'Format surat dinas BHP Medan: kop "KEMENTERIAN HUKUM REPUBLIK INDONESIA / KANTOR WILAYAH SUMATERA UTARA / BALAI HARTA PENINGGALAN MEDAN / ' +
+    'Jalan Listrik No. 10 Medan", nomor "W.2.AHU.AHU.1-<kode>-[....]", Sifat/Lampiran/Hal, "Yth. ...", penutup "Demikian ...", ' +
+    'tanda tangan "Kepala," lalu nama, dan Tembusan bila perlu.\n\n' + ATURAN_DOKUMEN_BHP;
+  const schema = { type: 'object', additionalProperties: false, required: ['docs'], properties: { docs: { type: 'array', items: {
+    type: 'object', additionalProperties: false, required: ['nama', 'tahap', 'alasan', 'isi'],
+    properties: { nama: { type: 'string' }, tahap: { type: 'string', enum: ['Sebelum', 'Saat', 'Sesudah'] }, alasan: { type: 'string' }, isi: { type: 'string' } } } } } };
+  const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'x-api-key': key, 'anthropic-version': '2026-10-21', 'anthropic-beta': 'server-side-fallback-2026-07-01' },
+    payload: JSON.stringify({
+      model: PROP.getProperty('CLAUDE_MODEL') || 'claude-opus-5-5',
+      max_tokens: 16000,
+      fallbacks: 'default',
+      output_config: { effort: 'medium', format: { type: 'json_schema', schema: schema } },
+      system: system,
+      messages: [{ role: 'user', content: content }],
+    }),
+  });
+  if (res.getResponseCode() !== 200) throw new Error('Claude ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 300));
+  const msg = JSON.parse(res.getContentText());
+  if (msg.stop_reason === 'refusal') throw new Error('Claude menolak permintaan ini');
+  if (msg.stop_reason === 'max_tokens') throw new Error('Jawaban Claude terpotong (max_tokens)');
+  const text = (msg.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('');
+  const docs = (JSON.parse(text).docs || []).filter(function (d) { return d && d.nama; }).slice(0, 8);
+  return { docs: docs, contoh: contoh.map(function (c) { return c.nama; }) };
 }
 
 function geminiDocs_(ev, key) {
@@ -459,6 +549,7 @@ function geminiDocs_(ev, key) {
     '"Yth. ...", penutup "Demikian ...", tanda tangan "Kepala," lalu nama, dan Tembusan bila perlu. Laporan memakai bab ' +
     'Pendahuluan (Umum, Maksud dan Tujuan, Ruang Lingkup, Tempat dan Waktu, Pegawai Yang Ditunjuk, Dasar Hukum), ' +
     'Kegiatan yang Dilaksanakan dan Hasil yang Dicapai, Kesimpulan dan Saran, Penutup. ' +
+    ATURAN_DOKUMEN_BHP + ' ' +
     'Kamu asisten administrasi kantor pemerintahan Indonesia. Untuk kegiatan berikut, tentukan 3-7 dokumen ' +
     'yang WAJIB/PERLU disiapkan (sebelum, saat, dan sesudah kegiatan). Untuk tiap dokumen beri: nama, tahap ' +
     '(Sebelum/Saat/Sesudah), alasan singkat, dan draf isi (kerangka lengkap dengan poin-poin, bahasa Indonesia formal, ' +
