@@ -575,9 +575,15 @@ function apiCreateDoc(eventId, nama, isi) {
   if (!ev) throw new Error('Kegiatan tidak ditemukan');
   const doc = DocumentApp.create(nama + ' — ' + ev.judul);
   const body = doc.getBody();
+  // Paragraph.setText() tidak mengembalikan paragraf, jadi paragraf pertama diambil dulu baru diisi.
   String(isi || '').split('\n').forEach(function (line, i) {
-    const p = i === 0 ? body.getParagraphs()[0].setText(line) : body.appendParagraph(line);
-    if (i === 0) p.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    if (i === 0) {
+      const first = body.getParagraphs()[0] || body.appendParagraph('');
+      first.setText(line);
+      first.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    } else {
+      body.appendParagraph(line).setHeading(DocumentApp.ParagraphHeading.NORMAL);
+    }
   });
   doc.saveAndClose();
   const file = DriveApp.getFileById(doc.getId());
