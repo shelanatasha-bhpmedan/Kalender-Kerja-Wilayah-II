@@ -456,6 +456,7 @@ function apiAiDocs(eventId) {
 
 /* ---------------------------------------------------------------- AI Dokumen dengan Claude
  * Script Property: ANTHROPIC_API_KEY (wajib), CLAUDE_MODEL (opsional, default claude-opus-5-5),
+ * CLAUDE_EFFORT (opsional: low/medium/high, default low = cepat & hemat kredit),
  * CONTOH_FOLDER_ID (opsional; default folder "Contoh Dokumen" di folder utama aplikasi).
  * Contoh dokumen dibaca dari Drive: Google Docs & teks (sebagai teks), PDF (dibaca langsung oleh Claude). */
 const ATURAN_DOKUMEN_BHP = [
@@ -526,7 +527,7 @@ function claudeDocs_(ev, key) {
       model: PROP.getProperty('CLAUDE_MODEL') || 'claude-opus-5-5',
       max_tokens: 16000,
       fallbacks: 'default',
-      output_config: { effort: 'medium', format: { type: 'json_schema', schema: schema } },
+      output_config: { effort: PROP.getProperty('CLAUDE_EFFORT') || 'low', format: { type: 'json_schema', schema: schema } },
       system: system,
       messages: [{ role: 'user', content: content }],
     }),
