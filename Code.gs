@@ -439,17 +439,17 @@ function apiAiDocs(eventId) {
   const cur = readAll_('events').filter(function (e) { return e.id === eventId; })[0];
   if (!cur) throw new Error('Kegiatan tidak ditemukan');
   const ev = parseEvent_(cur);
-  let docs = null, sumber = 'template', contoh = [];
+  let docs = null, sumber = 'template', contoh = [], galat = '';
   const ckey = PROP.getProperty('ANTHROPIC_API_KEY');
   if (ckey) {
-    try { const r = claudeDocs_(ev, ckey); docs = r.docs; contoh = r.contoh; sumber = 'claude'; } catch (e) { Logger.log('Claude gagal: ' + e); }
+    try { const r = claudeDocs_(ev, ckey); docs = r.docs; contoh = r.contoh; sumber = 'claude'; } catch (e) { galat = String(e.message || e).slice(0, 300); Logger.log('Claude gagal: ' + e); }
   }
   const gkey = PROP.getProperty('GEMINI_API_KEY');
   if ((!docs || !docs.length) && gkey) {
     try { docs = geminiDocs_(ev, gkey); sumber = 'gemini'; } catch (e) { Logger.log('Gemini gagal: ' + e); }
   }
   // tanpa AI: frontend memakai template format BHP Medan (lihat bhpDocs di Index.html)
-  if (!docs || !docs.length) return { sumber: 'template', docs: null };
+  if (!docs || !docs.length) return { sumber: 'template', docs: null, galat: galat || (ckey ? '' : 'ANTHROPIC_API_KEY belum diisi di Properti skrip') };
   log_('AI_DOKUMEN', ev, sumber + ': ' + docs.map(function (d) { return d.nama; }).join(', '));
   return { sumber: sumber, docs: docs, contoh: contoh };
 }
