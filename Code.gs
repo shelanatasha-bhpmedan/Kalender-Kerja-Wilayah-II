@@ -782,6 +782,134 @@ function apiCreateDoc(eventId, nama, isi, logoB64) {
   });
 }
 
+
+/* ---------------------------------------------------------------- SPS (nomor surat sps.batamen.com)
+ * Disalin dari aplikasi Dokumen Penyumpahan (protokol sama dengan skrip SAPA WALI BHP Medan):
+ * cookie sesi Laravel + X-XSRF-TOKEN; ambil nomor: POST /surat/store → nomor_lengkap;
+ * tanggal mundur memakai nomor cadangan dari /surat/available-nomor/{tanggal}.
+ * Properti skrip: SPS_USER + SPS_PASS (login otomatis) atau SPS_COOKIE; opsional SPS_FIELD (email/username). */
+const SPS_BASE = 'https://sps.batamen.com';
+function gabungCookie_(lama, res) {
+  const jar = {};
+  String(lama || '').split(/;\s*/).forEach(function (c) { const i = c.indexOf('='); if (i > 0) jar[c.slice(0, i)] = c.slice(i + 1); });
+  const h = res.getAllHeaders();
+  let sc = h['Set-Cookie'] || h['set-cookie'] || [];
+  if (!Array.isArray(sc)) sc = [sc];
+  sc.forEach(function (c) { const kv = String(c).split(';')[0]; const i = kv.indexOf('='); if (i > 0) jar[kv.slice(0, i)] = kv.slice(i + 1); });
+  return Object.keys(jar).map(function (k) { return k + '=' + jar[k]; }).join('; ');
+}
+/** Login otomatis ke SPS (form login Laravel) memakai SPS_USER/SPS_PASS. */
+function spsLogin_() {
+  const user = PROP.getProperty('SPS_USER'), pass = PROP.getProperty('SPS_PASS');
+  if (!user || !pass) return '';
+  const r1 = UrlFetchApp.fetch(SPS_BASE + '/login', { muteHttpExceptions: true, followRedirects: false });
+  let cookie = gabungCookie_('', r1);
+  const m = r1.getContentText().match(/name="_token"\s+value="([^"]+)"/) || r1.getContentText().match(/<meta name="csrf-token" content="([^"]+)"/);
+  const field = (PROP.getProperty('SPS_FIELD') || (/name="email"/.test(r1.getContentText()) ? 'email' : 'username'));
+  const payload = { _token: m ? m[1] : '', password: pass }; payload[field] = user;
+  const r2 = UrlFetchApp.fetch(SPS_BASE + '/login', { method: 'post', payload: payload, muteHttpExceptions: true, followRedirects: false, headers: { Cookie: cookie, Referer: SPS_BASE + '/login' } });
+  cookie = gabungCookie_(cookie, r2);
+  const loc = String((r2.getAllHeaders().Location || r2.getAllHeaders().location || ''));
+  if (r2.getResponseCode() >= 400 || /\/login/.test(loc)) throw new Error('Login SPS gagal: username/password ditolak (HTTP ' + r2.getResponseCode() + ').');
+  return cookie;
+}
+function spsCookie_(baru) {
+  const cache = CacheService.getScriptCache();
+  if (!baru) { const c = cache.get('sps_cookie'); if (c) return c; }
+  let c = '';
+  if (baru || !PROP.getProperty('SPS_COOKIE')) c = spsLogin_();
+  if (!c) c = (PROP.getProperty('SPS_COOKIE') || '').trim();
+  if (!c) throw new Error('SPS belum terhubung: isi SPS_USER dan SPS_PASS (atau SPS_COOKIE) di Properti skrip Apps Script.');
+  cache.put('sps_cookie', c, 3600);
+  return c;
+}
+function spsHeaders_(c) {
+  const m = c.match(/XSRF-TOKEN=([^;]+)/);
+  const h = { Cookie: c, 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json', Referer: SPS_BASE + '/surat/tanggal-mundur' };
+  if (m) h['X-XSRF-TOKEN'] = decodeURIComponent(m[1]);
+  return h;
+}
+/** Panggil SPS; jika sesi habis (401/419/302) coba login ulang sekali. */
+function spsFetch_(path, opt) {
+  let c = spsCookie_();
+  let res = UrlFetchApp.fetch(SPS_BASE + path, Object.assign({ headers: spsHeaders_(c), muteHttpExceptions: true, followRedirects: false }, opt));
+  if ([401, 419, 302].indexOf(res.getResponseCode()) >= 0 && PROP.getProperty('SPS_USER')) {
+    c = spsCookie_(true);
+    res = UrlFetchApp.fetch(SPS_BASE + path, Object.assign({ headers: spsHeaders_(c), muteHttpExceptions: true, followRedirects: false }, opt));
+  }
+  if ([401, 419, 302].indexOf(res.getResponseCode()) >= 0) throw new Error('Sesi SPS kedaluwarsa. Periksa SPS_USER/SPS_PASS atau perbarui SPS_COOKIE di Properti skrip.');
+  return res;
+}
+function hariIni_() { return Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd'); }
+function jsonSps_(r, apa) {
+  const t = r.getContentText();
+  try { return JSON.parse(t); }
+  catch (e) {
+    if (/<html|<!doctype/i.test(t)) throw new Error('SPS mengembalikan halaman web, bukan data (' + apa + '). Sesi SPS kemungkinan habis — periksa SPS_USER/SPS_PASS atau perbarui SPS_COOKIE di Properti skrip.');
+    throw new Error('Jawaban SPS tidak terbaca (' + apa + '): ' + t.slice(0, 150));
+  }
+}
+/**
+ * Ambil daftar nomor cadangan yang masih TERSEDIA dari jawaban /surat/available-nomor/{tgl}
+ * (halaman SPS "Nomor Hari Mundur": Nomor tersedia 2719, 2720 … ; Sudah terpakai 2714 …).
+ * Bentuk JSON persisnya tidak didokumentasikan, jadi dicari array bernama available/tersedia,
+ * dan array bernama used/terpakai dipakai untuk menyaring.
+ */
+function nomorTersedia_(j) {
+  const ambil = function (v) { return (v && typeof v === 'object') ? (v.nomor || v.nomor_surat || v.number || v.value || v.no) : v; };
+  const angka = function (arr) { return (arr || []).map(ambil).filter(function (x) { return x !== undefined && x !== null && /^\d+[A-Za-z]?$/.test(String(x).trim()); }).map(function (x) { return String(x).trim(); }); };
+  const cariArr = function (o, pola, dalam) {
+    if (!o || typeof o !== 'object' || dalam > 4) return null;
+    for (const k in o) { if (pola.test(k) && Array.isArray(o[k])) return o[k]; }
+    for (const k in o) { if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k])) { const r = cariArr(o[k], pola, dalam + 1); if (r) return r; } }
+    return null;
+  };
+  const pakai = angka(cariArr(j, /used|terpakai|pakai|taken|booked/i, 0));
+  let ada = angka(cariArr(j, /avail|tersedia|kosong|free|sisa/i, 0));
+  if (!ada.length && Array.isArray(j)) ada = angka(j);
+  if (!ada.length && Array.isArray(j.data)) ada = angka(j.data);
+  return ada.filter(function (x) { return pakai.indexOf(x) < 0; });
+}
+/** Ambil nomor SPS untuk satu draf dokumen kegiatan (tanggal hari ini atau mundur; tanggal maju ditolak). */
+function spsAmbil_(kode, perihal, pegawai, tanggal) {
+  const hari = hariIni_();
+  tanggal = String(tanggal || hari);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) throw new Error('Format tanggal nomor tidak valid: ' + tanggal);
+  if (tanggal > hari) throw new Error('SPS tidak bisa mengambil nomor untuk tanggal yang akan datang (' + tanggal + ').');
+  if (!/^[A-Z]{2}\.\d{2}\.\d{2}$/.test(String(kode || ''))) throw new Error('Kode klasifikasi surat tidak valid: ' + kode);
+  const body = { nama_pegawai: pegawai, kode_belakang: kode, perihal: perihal, tanggal_surat: tanggal };
+  if (tanggal < hari) {
+    const a = spsFetch_('/surat/available-nomor/' + tanggal, { method: 'get' });
+    if (a.getResponseCode() !== 200) throw new Error('SPS: gagal cek nomor tersedia tanggal ' + tanggal + ' (HTTP ' + a.getResponseCode() + ').');
+    const nomor = nomorTersedia_(jsonSps_(a, 'nomor tersedia'))[0];
+    if (!nomor) throw new Error('Tidak ada nomor cadangan SPS yang tersedia pada tanggal ' + tanggal + '. Pilih tanggal lain atau gunakan tanggal hari ini.');
+    body.nomor_surat = nomor;
+  }
+  let r = null, err = null;
+  for (let k = 0; k < 2; k++) {
+    try { r = spsFetch_('/surat/store', { method: 'post', contentType: 'application/json', payload: JSON.stringify(body) }); err = null; }
+    catch (e) { err = e; if (/kedaluwarsa|belum terhubung/.test(e.message)) throw e; Utilities.sleep(1500); continue; }
+    if (r.getResponseCode() >= 500) { Utilities.sleep(1500); continue; }
+    break;
+  }
+  if (err) throw new Error('Gagal menghubungi SPS: ' + err.message);
+  if (r.getResponseCode() !== 200) throw new Error('SPS ambil nomor gagal (HTTP ' + r.getResponseCode() + '): ' + r.getContentText().slice(0, 300));
+  const j = jsonSps_(r, 'ambil nomor');
+  if (!j.success || !j.nomor_lengkap) throw new Error('SPS menolak: ' + (j.message || JSON.stringify(j).slice(0, 200)));
+  return String(j.nomor_lengkap);
+}
+function apiSpsInfo() { return { terhubung: !!(PROP.getProperty('SPS_COOKIE') || (PROP.getProperty('SPS_USER') && PROP.getProperty('SPS_PASS'))) }; }
+function apiAmbilNomorSps(eventId, kode, perihal, pegawai, tanggal) {
+  const ev = readAll_('events').filter(function (e) { return e.id === eventId; })[0];
+  if (!ev) throw new Error('Kegiatan tidak ditemukan');
+  pegawai = String(pegawai || '').trim(); perihal = String(perihal || '').trim().slice(0, 250);
+  if (!pegawai) throw new Error('Nama pegawai pengambil nomor wajib diisi');
+  if (!perihal) throw new Error('Perihal surat wajib diisi');
+  const nomor = spsAmbil_(kode, perihal, pegawai, tanggal);
+  log_('NOMOR_SPS', { id: eventId, judul: ev.judul }, nomor + ' — ' + perihal + ' (' + (tanggal || hariIni_()) + ', ' + pegawai + ')');
+  return { nomor: nomor, tanggal: tanggal || hariIni_() };
+}
+
 /** Menambahkan item ke checklist (dipakai AI & To Do List). */
 function apiAddChecklist(eventId, items) {
   return withLock_(function () {

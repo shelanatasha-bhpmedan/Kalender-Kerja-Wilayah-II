@@ -57,6 +57,11 @@ Setelah disiapkan sekali, setiap push yang mengubah `Code.gs`, `Index.html`, ata
 
 > File `.clasprc.json` berisi akses ke akun Google Anda. Simpan hanya sebagai secret GitHub dan jangan pernah di-commit ke repo.
 
+### 🔢 Nomor surat dari SPS (sps.batamen.com)
+Di tab **AI Dokumen**, surat yang bernomor (Nota Dinas, Undangan, Surat Tugas, Laporan, dll.) punya tombol **🔢 Nomor SPS**. Isi kode klasifikasi, perihal, nama pegawai, dan tanggal surat (hari ini atau tanggal mundur), lalu klik **Ambil nomor**. Nomor resmi langsung dimasukkan ke draf, sehingga Google Doc yang dibuat sesudahnya sudah bernomor. Cara kerjanya sama dengan aplikasi Dokumen Penyumpahan dan skrip SAPA WALI.
+
+Isi di **Properti skrip**: `SPS_USER` dan `SPS_PASS` (akun SPS, untuk login otomatis), atau `SPS_COOKIE` (cookie sesi SPS). Opsional `SPS_FIELD` (`email` atau `username`) bila nama kolom login SPS perlu dipaksa.
+
 ## 🧪 Coba tanpa deploy
 Buka `Index.html` langsung di browser. Aplikasi otomatis masuk **mode demo** (data disimpan di localStorage).
 
