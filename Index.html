@@ -517,6 +517,8 @@ const Demo = (() => {
     apiCreateDoc(i, nama, isi) { return this.apiUpload(i, nama + '.txt', 'text/plain', btoa(unescape(encodeURIComponent(isi)))); },
     apiAddChecklist(i, items) { const e = db.events.find(x => x.id === i); [].concat(items).forEach(t => { if (!e.checklist.some(c => c.t === t)) e.checklist.push({ t, d: false }); }); log('CHECKLIST', e, '+ ' + items); save(); return e; },
     apiAmbilNomorSps(i, kode, perihal, peg, tgl) { return { nomor: 'W.2.AHU.AHU.1-' + kode + '-9999', tanggal: tgl }; },
+    apiTesSps() { return 'Mode demo: SPS tidak benar-benar dihubungi.'; },
+    apiSimpanAkunSps() { return { terhubung: true }; },
     apiLogs(limit, eventId) { return db.logs.filter(l => !eventId || l.eventId === eventId).slice(-(limit || 300)).reverse(); },
   };
 })();
@@ -1317,8 +1319,29 @@ function spsBuka(i) {
     <label>Nama pegawai</label><input id="spsN${i}" value="${esc(peg)}" placeholder="nama pengambil nomor">
     <label>Tanggal surat</label><input id="spsT${i}" type="date" value="${todayKey()}" max="${todayKey()}">
     <div class="full"><button class="btn btn-primary" id="spsB${i}" onclick="spsAmbil(${i})">Ambil nomor</button>
-    <small style="color:var(--muted)">Tanggal mundur memakai nomor cadangan SPS. Tanggal yang akan datang tidak bisa.</small></div>`;
+    <button class="btn btn-soft" onclick="spsTes()">Tes koneksi</button>
+    <small style="color:var(--muted)">Tanggal mundur memakai nomor cadangan SPS. Tanggal yang akan datang tidak bisa.</small></div>
+    <details class="full" style="display:block"><summary style="cursor:pointer;font-weight:600">⚙️ Akun SPS</summary>
+      <div style="display:grid;gap:6px;margin-top:6px">
+        <input id="spsU${i}" placeholder="Username / email SPS" autocomplete="off">
+        <input id="spsW${i}" type="password" placeholder="Password SPS" autocomplete="new-password">
+        <input id="spsC${i}" placeholder="atau tempel cookie SPS (opsional)" autocomplete="off">
+        <div><button class="btn btn-soft" onclick="spsSimpanAkun(${i})">Simpan &amp; tes</button>
+        <small style="color:var(--muted)">Disimpan di Properti skrip Apps Script, tidak ditampilkan lagi di layar.</small></div>
+      </div></details>`;
   box.hidden = false;
+}
+async function spsTes() {
+  toast('Menguji koneksi SPS…');
+  try { toast('✅ ' + await call('apiTesSps')); } catch (err) { toast('⚠️ ' + err.message); }
+}
+async function spsSimpanAkun(i) {
+  const v = k => document.getElementById(k + i).value.trim();
+  try {
+    await call('apiSimpanAkunSps', v('spsU'), document.getElementById('spsW' + i).value, v('spsC'));
+    ['spsU', 'spsW', 'spsC'].forEach(k => { document.getElementById(k + i).value = ''; });
+    await spsTes();
+  } catch (err) { toast('⚠️ ' + err.message); }
 }
 function pasangNomor(isi, nomor, tgl) {
   let ganti = false;

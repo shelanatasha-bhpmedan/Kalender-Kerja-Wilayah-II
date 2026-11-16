@@ -876,7 +876,7 @@ function spsAmbil_(kode, perihal, pegawai, tanggal) {
   tanggal = String(tanggal || hari);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) throw new Error('Format tanggal nomor tidak valid: ' + tanggal);
   if (tanggal > hari) throw new Error('SPS tidak bisa mengambil nomor untuk tanggal yang akan datang (' + tanggal + ').');
-  if (!/^[A-Z]{2}\.\d{2}\.\d{2}$/.test(String(kode || ''))) throw new Error('Kode klasifikasi surat tidak valid: ' + kode);
+  if (!/^[A-Z]{2}(\.\d{2}){1,3}$/.test(String(kode || ''))) throw new Error('Kode klasifikasi surat tidak valid: ' + kode);
   const body = { nama_pegawai: pegawai, kode_belakang: kode, perihal: perihal, tanggal_surat: tanggal };
   if (tanggal < hari) {
     const a = spsFetch_('/surat/available-nomor/' + tanggal, { method: 'get' });
@@ -898,7 +898,31 @@ function spsAmbil_(kode, perihal, pegawai, tanggal) {
   if (!j.success || !j.nomor_lengkap) throw new Error('SPS menolak: ' + (j.message || JSON.stringify(j).slice(0, 200)));
   return String(j.nomor_lengkap);
 }
-function apiSpsInfo() { return { terhubung: !!(PROP.getProperty('SPS_COOKIE') || (PROP.getProperty('SPS_USER') && PROP.getProperty('SPS_PASS'))) }; }
+function apiSpsInfo() { return { terhubung: !!(PROP.getProperty('SPS_COOKIE') || (PROP.getProperty('SPS_USER') && PROP.getProperty('SPS_PASS'))), akun: !!PROP.getProperty('SPS_USER'), cookie: !!PROP.getProperty('SPS_COOKIE') }; }
+/** Simpan akun SPS dari aplikasi. Hanya ditulis ke Properti skrip, tidak pernah dikirim balik ke browser. */
+function apiSimpanAkunSps(user, pass, cookie) {
+  user = String(user || '').trim(); pass = String(pass || ''); cookie = String(cookie || '').trim();
+  if (!user && !pass && !cookie) throw new Error('Isi username dan password SPS, atau cookie SPS.');
+  if ((user && !pass) || (!user && pass)) throw new Error('Username dan password SPS harus diisi keduanya.');
+  if (user) { PROP.setProperty('SPS_USER', user); PROP.setProperty('SPS_PASS', pass); }
+  if (cookie) PROP.setProperty('SPS_COOKIE', cookie);
+  CacheService.getScriptCache().remove('sps_cookie');
+  log_('PENGATURAN', { id: '', judul: '' }, 'Akun SPS diperbarui' + (user ? ' (akun)' : '') + (cookie ? ' (cookie)' : ''));
+  return apiSpsInfo();
+}
+/** Uji koneksi SPS: cek nomor cadangan 7 hari lalu (tidak mengambil nomor). */
+function apiTesSps() {
+  const d = new Date(); d.setDate(d.getDate() - 7);
+  const t = Utilities.formatDate(d, 'Asia/Jakarta', 'yyyy-MM-dd');
+  const r = spsFetch_('/surat/available-nomor/' + t, { method: 'get' });
+  if (r.getResponseCode() !== 200) throw new Error('SPS menjawab HTTP ' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 200));
+  const j = jsonSps_(r, 'tes koneksi');
+  return 'SPS terhubung. Tanggal ' + t + ': nomor terakhir ' + ((j.info && j.info.nomor_terakhir_hari_ini) || '-') + ', tersedia ' + (j.available_count != null ? j.available_count : nomorTersedia_(j).length) + ' nomor cadangan.';
+}
+/** Jalankan dari editor Apps Script (pilih cekSps → Run), lalu lihat Log eksekusi. Tidak mengambil nomor. */
+function cekSps() {
+  try { Logger.log('SPS ✅ ' + apiTesSps()); } catch (e) { Logger.log('SPS ❌ ' + e.message); }
+}
 function apiAmbilNomorSps(eventId, kode, perihal, pegawai, tanggal) {
   const ev = readAll_('events').filter(function (e) { return e.id === eventId; })[0];
   if (!ev) throw new Error('Kegiatan tidak ditemukan');
