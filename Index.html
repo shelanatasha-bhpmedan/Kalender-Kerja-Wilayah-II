@@ -253,6 +253,11 @@ kbd{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6p
 .rk-dup{font-size:12px;background:var(--gold-soft);border:1px solid #ecd9a8;border-radius:12px;padding:8px 12px;margin-bottom:10px}
 .rk-nofile{color:var(--danger);font-weight:600;font-size:12px}
 @media (max-width:900px){.rk-tbl .hm{display:none}}
+.sps-box{background:var(--gold-soft);border:1px solid #ecd9a8;border-radius:12px;padding:10px;margin:8px 0;display:grid;grid-template-columns:110px 1fr;gap:6px 10px;align-items:center;font-size:12.5px}
+.sps-box[hidden]{display:none}
+.sps-box input{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit;width:100%}
+.sps-box .full{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (max-width:600px){.sps-box{grid-template-columns:1fr}}
 /* palette & toast */
 .palette{position:fixed;inset:0;z-index:95;background:rgba(10,10,30,.4);backdrop-filter:blur(3px);display:none;justify-content:center;padding-top:12vh}
 .palette.show{display:flex}
@@ -511,6 +516,7 @@ const Demo = (() => {
     apiAiDocs(i) { const e = db.events.find(x => x.id === i); log('AI_DOKUMEN', e, 'template'); save(); return { sumber: 'template', docs: null }; },
     apiCreateDoc(i, nama, isi) { return this.apiUpload(i, nama + '.txt', 'text/plain', btoa(unescape(encodeURIComponent(isi)))); },
     apiAddChecklist(i, items) { const e = db.events.find(x => x.id === i); [].concat(items).forEach(t => { if (!e.checklist.some(c => c.t === t)) e.checklist.push({ t, d: false }); }); log('CHECKLIST', e, '+ ' + items); save(); return e; },
+    apiAmbilNomorSps(i, kode, perihal, peg, tgl) { return { nomor: 'W.2.AHU.AHU.1-' + kode + '-9999', tanggal: tgl }; },
     apiLogs(limit, eventId) { return db.logs.filter(l => !eventId || l.eventId === eventId).slice(-(limit || 300)).reverse(); },
   };
 })();
@@ -1277,8 +1283,67 @@ function aiHtml(id) {
     <button class="btn btn-ghost" onclick="aiToTodo('${id}')">☑ Masukkan ke To Do</button><button class="btn btn-primary" onclick="aiCreateAll('${id}')">📄 Buat semua dokumen</button></div>
     ${r.docs.map((d, i) => `<div class="ai-doc"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1">📄 ${esc(d.nama)}</b>
       <span class="tag" style="background:${soft(TC[d.tahap] || '#888888')};color:${TC[d.tahap] || '#888'}">${esc(d.tahap || '')}</span>
+      ${/W\.2\.AHU|nota dinas|undangan|surat|laporan|pengantar|berita acara/i.test(d.nama + ' ' + (d.isi || '').slice(0, 600)) ? `<button class="btn btn-soft" onclick="spsBuka(${i})" title="Ambil nomor surat dari SPS">🔢 Nomor SPS</button>` : ''}
       <button class="btn btn-soft" onclick="aiCreate('${id}',${i})" id="aiC${i}">Buat Google Doc</button></div>
+      ${d.nomorSps ? `<div style="font-size:12px;color:var(--ok);font-weight:700;margin:4px 0">✅ Nomor SPS: ${esc(d.nomorSps)}</div>` : ''}
+      <div id="sps${i}" class="sps-box" hidden></div>
       <small style="color:var(--muted)">${esc(d.alasan || '')}</small><details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;font-weight:600">Lihat draf isi</summary><pre>${esc(d.isi || '')}</pre></details></div>`).join('')}`;
+}
+
+/* ============================================================ nomor surat SPS (sps.batamen.com)
+ * Mengambil nomor surat resmi lewat server (Code.gs → apiAmbilNomorSps) lalu menempelkannya ke draf,
+ * sehingga Google Doc yang dibuat sesudahnya langsung bernomor. Tanggal mundur memakai nomor cadangan SPS. */
+function spsKode(d) {
+  const m = String(d.isi || '').match(/W\.2\.AHU\.AHU\.1[-.]([A-Z]{2}\.\d{2}\.\d{2})/);
+  if (m) return m[1];
+  const n = (d.nama + ' ' + (S.ai && S.events.find(e => e.id === S.ai.id) || {}).judul).toLowerCase();
+  if (/surat tugas|sppd/.test(n)) return 'KP.04.01';
+  if (/laporan|pengantar/.test(n)) return 'OT.03.02';
+  if (/sumpah|perwalian|wali\b/.test(n)) return 'AH.06.02';
+  if (/pailit|kepailitan/.test(n)) return 'AH.06.06';
+  if (/pengampu/.test(n) && !/nota|undangan|rapat/.test(n)) return 'AH.06.03';
+  return 'UM.01.01';
+}
+function spsPerihal(d) {
+  const m = String(d.isi || '').match(/^\s*(?:Hal|Perihal)\s*\t*:\s*(.+)$/mi);
+  return (m ? m[1] : d.nama).trim();
+}
+function spsBuka(i) {
+  const box = document.getElementById('sps' + i), d = S.ai.docs[i];
+  if (!box.hidden) { box.hidden = true; return; }
+  let peg = ''; try { peg = localStorage.getItem('kkw2-sps-pegawai') || ''; } catch (e) {}
+  box.innerHTML = `<label>Kode klasifikasi</label><input id="spsK${i}" value="${esc(spsKode(d))}" placeholder="mis. UM.01.01">
+    <label>Perihal</label><input id="spsP${i}" value="${esc(spsPerihal(d))}">
+    <label>Nama pegawai</label><input id="spsN${i}" value="${esc(peg)}" placeholder="nama pengambil nomor">
+    <label>Tanggal surat</label><input id="spsT${i}" type="date" value="${todayKey()}" max="${todayKey()}">
+    <div class="full"><button class="btn btn-primary" id="spsB${i}" onclick="spsAmbil(${i})">Ambil nomor</button>
+    <small style="color:var(--muted)">Tanggal mundur memakai nomor cadangan SPS. Tanggal yang akan datang tidak bisa.</small></div>`;
+  box.hidden = false;
+}
+function pasangNomor(isi, nomor, tgl) {
+  let ganti = false;
+  const tglTeks = (() => { const d = parse(tgl); return d.getDate() + ' ' + BLN[d.getMonth()] + ' ' + d.getFullYear(); })();
+  const out = String(isi || '').split('\n').map(l => {
+    if (/^\s*nomor\b/i.test(l) && !ganti) { ganti = true; return /^\s*nomor\s*\t*:/i.test(l) ? l.replace(/:.*/, ': ' + nomor) : 'NOMOR ' + nomor; }
+    if (/W\.2\.AHU\.AHU\.1[-.][A-Z]{2}\.\d{2}\.\d{2}-\[\.*\]/.test(l) && !ganti) { ganti = true; return l.replace(/W\.2\.AHU\.AHU\.1[-.][A-Z]{2}\.\d{2}\.\d{2}-\[\.*\]/, nomor); }
+    if (/^\s*Tanggal\s*\t*:/i.test(l) && /\[\.*\]|\d{1,2} \w+ \d{4}/.test(l)) return l.replace(/:.*/, ': ' + tglTeks);
+    if (/^\s*Medan,\s/i.test(l)) return l.replace(/Medan,\s.*$/i, 'Medan, ' + tglTeks);
+    return l;
+  });
+  return (ganti ? out : ['NOMOR ' + nomor].concat(out)).join('\n');
+}
+async function spsAmbil(i) {
+  const d = S.ai.docs[i], v = k => document.getElementById(k + i).value.trim();
+  const kode = v('spsK').toUpperCase(), perihal = v('spsP'), peg = v('spsN'), tgl = v('spsT');
+  if (!peg) return toast('Isi nama pegawai pengambil nomor');
+  try { localStorage.setItem('kkw2-sps-pegawai', peg); } catch (e) {}
+  const b = document.getElementById('spsB' + i); b.disabled = true; b.textContent = 'Mengambil nomor…';
+  try {
+    const r = await call('apiAmbilNomorSps', S.ai.id, kode, perihal, peg, tgl);
+    d.nomorSps = r.nomor; d.isi = pasangNomor(d.isi, r.nomor, r.tanggal);
+    document.getElementById('aiRes').innerHTML = aiHtml(S.ai.id);
+    toast('🔢 Nomor SPS: ' + r.nomor + ' (sudah dimasukkan ke draf)');
+  } catch (err) { toast('⚠️ ' + err.message); b.disabled = false; b.textContent = 'Coba lagi'; }
 }
 async function aiToTodo(id) { await call('apiAddChecklist', id, S.ai.docs.map(d => 'Siapkan ' + d.nama)); toast('☑ Ditambahkan ke To Do List'); refresh(true); }
 async function aiCreate(id, i, quiet) {
