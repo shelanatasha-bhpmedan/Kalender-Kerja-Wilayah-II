@@ -603,6 +603,16 @@ body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
 .doc.tahap-ttd .ttd{display:flex!important;margin-top:4px}
 .doc.tahap-ttd .catatan{display:block!important;margin-top:0}
 }
+.doc .pj-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.doc .pj-chips button{font-size:9.5px;padding:2px 6px;border:1px solid #DCE3EF;border-radius:999px;background:#F6F8FC;color:#44536F;cursor:pointer}
+.doc .pj-chips button.on{background:#143059;border-color:#143059;color:#fff}
+@media print{.doc .pj-chips{display:none!important}}
+@media screen and (max-width:900px){
+.doc .pj-chips{gap:6px;margin-top:8px}
+.doc .pj-chips button{font-size:13.5px;padding:8px 12px;border-radius:10px}
+.doc td.pj-sel::after{display:none}
+.doc td.pj-sel::before{content:"Penanggung jawab";display:block;font-size:12px;font-weight:700;color:#44536F;margin-bottom:4px}
+}
 </style>
 </head>
 <body>
@@ -2080,7 +2090,7 @@ function htmlLembarPJ(dari, sampai) {
     return '<tr><td class="tengah" data-label="No">' + (i + 1) + '</td><td class="tengah" data-label="Hari / Tanggal">' + tgl + '</td><td class="tengah" data-label="Waktu">' + jam + '</td>'
       + '<td class="keg" data-label="Kegiatan"><b>' + esc(e.judul) + '</b>' + (e.kategori ? '<div class="pihak">Kategori: ' + esc(e.kategori) + '</div>' : '') + '</td>'
       + '<td data-label="Tempat / Media">' + esc(e.lokasi || '-') + '</td>'
-      + '<td class="pj-sel" data-label="Penanggung Jawab"><input class="pj-input" list="tim-bhp" autocomplete="off" placeholder="pilih atau ketik" data-id="' + esc(e.id) + '" value="' + esc(e.pj || '') + '" aria-label="Penanggung jawab kegiatan nomor ' + (i + 1) + '"><span class="pj-stat"></span></td>'
+      + '<td class="pj-sel" data-label="Penanggung Jawab"><input class="pj-input" list="tim-bhp" autocomplete="off" placeholder="pilih atau ketik" data-id="' + esc(e.id) + '" value="' + esc(e.pj || '') + '" aria-label="Penanggung jawab kegiatan nomor ' + (i + 1) + '"><span class="pj-stat"></span><div class="pj-chips">' + TIM_BHP.map(nm => '<button type="button" data-nama="' + esc(nm) + '"' + (nm === (e.pj || '') ? ' class="on"' : '') + '>' + esc(nm.split(',')[0]) + '</button>').join('') + '</div></td>'
       + '<td class="paraf" data-label="Tanda Tangan"></td></tr>';
   }).join('') : '<tr><td colspan="7" class="tengah" style="padding:16px">Tidak ada kegiatan pada rentang tanggal ini.</td></tr>';
   return '<div class="kop"><img src="' + LOGO_PENGAYOMAN + '" alt="Lambang Pengayoman">'
@@ -2203,6 +2213,17 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
   }
   const isiTglCetak = () => { const el = document.getElementById('pj-tgl-cetak'); if (el) el.textContent = pjPanjang(todayKey()); };
   window.addEventListener('beforeprint', isiTglCetak);
+  veil.addEventListener('click', ev => {
+    const c = ev.target.closest('.pj-chips button'); if (!c) return;
+    const td = c.closest('td'), inp = td.querySelector('.pj-input');
+    inp.value = c.classList.contains('on') ? '' : c.dataset.nama;
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  veil.addEventListener('input', ev => {
+    const inp = ev.target.closest('.pj-input'); if (!inp) return;
+    inp.closest('td').querySelectorAll('.pj-chips button').forEach(x => x.classList.toggle('on', x.dataset.nama === inp.value.trim()));
+  });
   veil.addEventListener('change', async ev => {
     const inp = ev.target.closest('.pj-input'); if (!inp) return;
     const st = inp.nextElementSibling, nama = inp.value.trim();
