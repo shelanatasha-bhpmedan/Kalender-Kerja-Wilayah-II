@@ -454,6 +454,7 @@ body{background:#EEF1F7}
 .doc .pihak{font-size:10px;color:#333}
 .doc .pj-input{width:100%;border:1px solid #C3CAD8;border-radius:3px;background:#FBFCFE;font:inherit;font-size:10.5px;padding:4px 20px 4px 6px;outline:none}
 .doc .pj-input:focus{border-color:#1F4274;background:#fff}
+.doc .pj-stat{display:block;font-size:9px;color:#7A88A3;min-height:11px}.doc .pj-stat.ok{color:#0E7A5A}.doc .pj-stat.err{color:#C9344B}
 .doc .pj-sel{position:relative}
 .doc .pj-sel::after{content:"";position:absolute;right:7px;top:50%;width:0;height:0;margin-top:-1px;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:4px solid #5B78A8;pointer-events:none}
 .doc td.paraf{height:48px}
@@ -474,6 +475,7 @@ body{background:#EEF1F7}
   .doc .pj-input::placeholder{color:transparent}
   .doc .pj-input::-webkit-calendar-picker-indicator{display:none}
   .doc .pj-sel::after{display:none}
+  .doc .pj-stat{display:none}
   @page{size:A4 portrait;margin:14mm}
 }
 /* === Pas satu layar (laptop & HP): tanpa gulir halaman === */
@@ -1992,7 +1994,7 @@ function htmlLembarPJ(dari, sampai) {
     return '<tr><td class="tengah">' + (i + 1) + '</td><td class="tengah">' + tgl + '</td><td class="tengah">' + jam + '</td>'
       + '<td><b>' + esc(e.judul) + '</b>' + (e.kategori ? '<div class="pihak">Kategori: ' + esc(e.kategori) + '</div>' : '') + '</td>'
       + '<td>' + esc(e.lokasi || '-') + '</td>'
-      + '<td class="pj-sel"><input class="pj-input" list="tim-bhp" autocomplete="off" placeholder="pilih atau ketik" aria-label="Penanggung jawab kegiatan nomor ' + (i + 1) + '"></td>'
+      + '<td class="pj-sel"><input class="pj-input" list="tim-bhp" autocomplete="off" placeholder="pilih atau ketik" data-id="' + esc(e.id) + '" value="' + esc(e.pj || '') + '" aria-label="Penanggung jawab kegiatan nomor ' + (i + 1) + '"><span class="pj-stat"></span></td>'
       + '<td class="paraf"></td></tr>';
   }).join('') : '<tr><td colspan="7" class="tengah" style="padding:16px">Tidak ada kegiatan pada rentang tanggal ini.</td></tr>';
   return '<div class="kop"><img src="' + LOGO_PENGAYOMAN + '" alt="Lambang Pengayoman">'
@@ -2023,6 +2025,16 @@ function bukaLembarPJ() {
     + '</div><div class="doc" id="pj-doc"></div></div>';
   document.body.appendChild(veil);
   const gambar = () => { document.getElementById('pj-doc').innerHTML = htmlLembarPJ(document.getElementById('pj-dari').value, document.getElementById('pj-sampai').value); };
+  veil.addEventListener('change', async ev => {
+    const inp = ev.target.closest('.pj-input'); if (!inp) return;
+    const st = inp.nextElementSibling, nama = inp.value.trim();
+    st.textContent = 'menyimpan…'; st.className = 'pj-stat';
+    try {
+      await call('apiSetPj', inp.dataset.id, nama);
+      const e = S.events.find(x => x.id === inp.dataset.id); if (e) e.pj = nama;
+      st.textContent = '✓ tersimpan'; st.className = 'pj-stat ok';
+    } catch (err) { st.textContent = '✗ gagal: ' + (err.message || err); st.className = 'pj-stat err'; }
+  });
   veil.querySelector('#pj-dari').onchange = gambar; veil.querySelector('#pj-sampai').onchange = gambar;
   let zoom = 100;
   const setZoom = v => { zoom = Math.min(200, Math.max(60, v)); document.getElementById('pj-doc').style.zoom = zoom / 100; document.getElementById('pj-zoom').textContent = zoom + '%'; };

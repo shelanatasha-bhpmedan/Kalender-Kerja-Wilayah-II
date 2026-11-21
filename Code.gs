@@ -10,7 +10,7 @@ const PROP = PropertiesService.getScriptProperties();
 const SHEETS = {
   events: ['id', 'judul', 'deskripsi', 'mulai', 'selesai', 'jamMulai', 'jamSelesai', 'seharian',
     'lokasi', 'kategori', 'prioritas', 'status', 'peserta', 'checklist', 'tautan',
-    'dibuatOleh', 'dibuatPada', 'diubahOleh', 'diubahPada', 'dihapus'],
+    'dibuatOleh', 'dibuatPada', 'diubahOleh', 'diubahPada', 'dihapus', 'pj'],
   files: ['id', 'eventId', 'fileId', 'nama', 'mime', 'ukuran', 'url', 'oleh', 'pada', 'dihapus'],
   comments: ['id', 'eventId', 'oleh', 'pada', 'isi'],
   logs: ['waktu', 'pengguna', 'aksi', 'eventId', 'judul', 'detail'],
@@ -947,5 +947,22 @@ function apiAddChecklist(eventId, items) {
     log_('CHECKLIST', ev, '+ ' + [].concat(items).join(', '));
     bump_();
     return ev;
+  });
+}
+
+/** Lembar PJ: simpan penanggung jawab satu kegiatan (diisi Kasi lewat Lembar PJ). */
+function apiSetPj(eventId, nama) {
+  return withLock_(function () {
+    const sh = sheet_('events');
+    const col = SHEETS.events.indexOf('pj') + 1;
+    if (sh.getRange(1, col).getValue() !== 'pj') sh.getRange(1, col).setValue('pj').setFontWeight('bold');
+    const cur = readAll_('events').filter(function (e) { return e.id === eventId && e.dihapus !== 'TRUE'; })[0];
+    if (!cur) throw new Error('Kegiatan tidak ditemukan');
+    const val = String(nama || '').trim().slice(0, 120);
+    sh.getRange(cur._row, col).setValue(val);
+    const ev = parseEvent_(cur); ev.pj = val;
+    log_('PJ', ev, val ? 'Penanggung jawab: ' + val : 'Penanggung jawab dikosongkan');
+    bump_();
+    return val;
   });
 }
