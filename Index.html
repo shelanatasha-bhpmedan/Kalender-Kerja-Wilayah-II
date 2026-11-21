@@ -534,8 +534,28 @@ body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
 .doc-actions input[type=date]{flex:1 1 120px;min-width:0;height:30px;font-size:12px;padding:0 6px}
 .doc-actions .grow{display:none}
 .doc-actions .btn{padding:6px 10px;font-size:12px}
-.doc{width:880px;max-width:none;padding:28px 32px 36px}
-.doc-wrap{max-width:none}
+}
+@media screen and (max-width:900px){
+.doc{padding:16px 14px 22px;font-size:13.5px;line-height:1.5;zoom:1!important}
+.doc .kop{gap:10px}.doc .kop img{width:44px;height:50px}.doc .kop p{font-size:10.5px}.doc .kop b{font-size:12.5px}.doc .kop .kecil{font-size:9px}
+.doc h1{font-size:14px}.doc .doc-sub{font-size:13px}.doc .doc-periode{font-size:12.5px;margin-bottom:12px}
+.doc table,.doc tbody,.doc tr,.doc td{display:block;width:100%!important}
+.doc thead{display:none}
+.doc table{font-size:13.5px}
+.doc tr{border:1px solid #DCE3EF;border-radius:10px;margin:0 0 10px;padding:8px 10px;background:#fff;box-shadow:0 1px 2px rgba(15,28,51,.05)}
+.doc td{border:0;padding:3px 0;text-align:left!important;white-space:normal!important}
+.doc td::before{content:attr(data-label);display:block;font-size:11px;font-weight:700;color:#7A88A3;text-transform:uppercase;letter-spacing:.03em}
+.doc td[data-label="No"]{display:none}
+.doc td.keg::before{display:none}.doc td.keg b{font-size:15px}
+.doc td[data-label="Hari / Tanggal"],.doc td[data-label="Waktu"]{display:inline-block;width:auto!important;margin-right:14px}
+.doc td[data-label="Hari / Tanggal"] br,.doc td[data-label="Waktu"] br{display:none}
+.doc td.paraf{display:none}
+.doc .pj-input{font-size:15px;padding:9px 26px 9px 10px;border-radius:8px}
+.doc .pj-stat{font-size:11px}
+.doc .catatan{font-size:12px}
+.doc .ttd{justify-content:center}.doc .ttd-in{width:100%;font-size:13px}
+.doc .ttd-btn{font-size:14px;padding:9px 16px}
+.doc .ttd-pad canvas{max-width:100%;height:150px}
 }
 </style>
 </head>
@@ -2011,11 +2031,11 @@ function htmlLembarPJ(dari, sampai) {
   const baris = daftar.length ? daftar.map((e, i) => {
     const tgl = esc(PJ_HARI[pjTgl(e.mulai).getDay()]) + '<br>' + esc(pjPendek(e.mulai)) + (e.selesai !== e.mulai ? '<br>s.d. ' + esc(pjPendek(e.selesai)) : '');
     const jam = e.seharian || !e.jamMulai ? 'Seharian' : esc(e.jamMulai) + '<br>s.d. ' + esc(e.jamSelesai || 'selesai');
-    return '<tr><td class="tengah">' + (i + 1) + '</td><td class="tengah">' + tgl + '</td><td class="tengah">' + jam + '</td>'
-      + '<td><b>' + esc(e.judul) + '</b>' + (e.kategori ? '<div class="pihak">Kategori: ' + esc(e.kategori) + '</div>' : '') + '</td>'
-      + '<td>' + esc(e.lokasi || '-') + '</td>'
-      + '<td class="pj-sel"><input class="pj-input" list="tim-bhp" autocomplete="off" placeholder="pilih atau ketik" data-id="' + esc(e.id) + '" value="' + esc(e.pj || '') + '" aria-label="Penanggung jawab kegiatan nomor ' + (i + 1) + '"><span class="pj-stat"></span></td>'
-      + '<td class="paraf"></td></tr>';
+    return '<tr><td class="tengah" data-label="No">' + (i + 1) + '</td><td class="tengah" data-label="Hari / Tanggal">' + tgl + '</td><td class="tengah" data-label="Waktu">' + jam + '</td>'
+      + '<td class="keg" data-label="Kegiatan"><b>' + esc(e.judul) + '</b>' + (e.kategori ? '<div class="pihak">Kategori: ' + esc(e.kategori) + '</div>' : '') + '</td>'
+      + '<td data-label="Tempat / Media">' + esc(e.lokasi || '-') + '</td>'
+      + '<td class="pj-sel" data-label="Penanggung Jawab"><input class="pj-input" list="tim-bhp" autocomplete="off" placeholder="pilih atau ketik" data-id="' + esc(e.id) + '" value="' + esc(e.pj || '') + '" aria-label="Penanggung jawab kegiatan nomor ' + (i + 1) + '"><span class="pj-stat"></span></td>'
+      + '<td class="paraf" data-label="Tanda Tangan"></td></tr>';
   }).join('') : '<tr><td colspan="7" class="tengah" style="padding:16px">Tidak ada kegiatan pada rentang tanggal ini.</td></tr>';
   return '<div class="kop"><img src="' + LOGO_PENGAYOMAN + '" alt="Lambang Pengayoman">'
     + '<div><p>KEMENTERIAN HUKUM REPUBLIK INDONESIA</p><p>KANTOR WILAYAH SUMATERA UTARA</p><p><b>BALAI HARTA PENINGGALAN MEDAN</b></p>'
@@ -2126,7 +2146,6 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
   veil.onclick = e => { if (e.target === veil) tutup(); };
   document.addEventListener('keydown', escPJ);
   gambar();
-  if (innerWidth < 900) setZoom(Math.floor((innerWidth - 20) / 880 * 100));
 }
 </script>
 </body>
