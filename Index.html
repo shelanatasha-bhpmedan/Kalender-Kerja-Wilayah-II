@@ -428,6 +428,7 @@ body{background:#EEF1F7}
 .side .mini .t{background:var(--gold);color:var(--navy);font-weight:800}
 @media (max-width:900px){.masthead .brand small{display:none}.modal{border-radius:14px 14px 0 0}.fab,.bnav{border-radius:14px}}
 /* === Lembar penetapan penanggung jawab kegiatan === */
+body:has(.doc-veil) .overlay{z-index:130}
 .doc-veil{position:fixed;inset:0;z-index:120;background:rgba(2,25,50,.45);overflow-y:auto;padding:18px}
 .doc-wrap{max-width:880px;margin:0 auto}
 .doc-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:12px;background:#fff;border-radius:10px;padding:10px 12px}
@@ -461,6 +462,7 @@ body{background:#EEF1F7}
 .doc .ttd{margin-top:28px;display:flex;justify-content:flex-end}
 .doc .ttd-in{width:290px;text-align:center;font-size:11.5px}
 .doc .ttd-cap{margin:18px 0 22px}
+.doc .ttd-cap{min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center}.doc .ttd-img{height:64px;max-width:240px;object-fit:contain}.doc .ttd-info{font-size:9px;color:#7A88A3}.doc .ttd-info button{color:#C9344B;font-size:9px;text-decoration:underline}.doc .ttd-muat{font-size:10px;color:#7A88A3}.doc .ttd-btn{font-size:12px;padding:6px 12px}.doc .ttd-pad canvas{width:100%;max-width:320px;height:120px;border:1px dashed #5B78A8;border-radius:6px;background:#FBFCFE;touch-action:none;cursor:crosshair}.doc .ttd-pad-aksi{display:flex;gap:6px;justify-content:center;margin-top:6px}.doc .ttd-pad-aksi .btn{font-size:12px;padding:5px 10px}
 .doc .ttd-nama{font-weight:700;text-decoration:underline}
 .doc .ttd-nip{margin-top:2px}
 .doc .catatan{margin-top:16px;font-size:10.5px;line-height:1.55}
@@ -476,6 +478,7 @@ body{background:#EEF1F7}
   .doc .pj-input::-webkit-calendar-picker-indicator{display:none}
   .doc .pj-sel::after{display:none}
   .doc .pj-stat{display:none}
+  .doc .ttd-info,.doc .ttd-btn,.doc .ttd-muat,.doc .ttd-pad-aksi{display:none!important}.doc .ttd-pad canvas{border:0}
   @page{size:A4 portrait;margin:14mm}
 }
 /* === Pas satu layar (laptop & HP): tanpa gulir halaman === */
@@ -1082,6 +1085,8 @@ function copyShare() {
 function openFromLink(p) {
   p = p || {}; const one = v => Array.isArray(v) ? v[0] : v;
   const ev = one(p.ev), d = one(p.d);
+  const lb = one(p.lembar);
+  if (lb && /^\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}$/.test(lb)) { const [x, y] = lb.split('_'); bukaLembarPJ(x, y); return; }
   if (ev) { const e = S.events.find(x => x.id === ev); if (e) { pickDay(e.mulai); openDetail(ev); } else toast('Kegiatan yang dibagikan tidak ditemukan atau sudah dihapus'); }
   else if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) { pickDay(d); if (!matchMedia('(max-width:900px)').matches) { S.view = 'agenda'; render(); } }
 }
@@ -2009,22 +2014,71 @@ function htmlLembarPJ(dari, sampai) {
     + '<datalist id="tim-bhp">' + TIM_BHP.map(n => '<option value="' + esc(n) + '"></option>').join('') + '</datalist>'
     + '<div class="catatan"><b>Catatan</b>Kolom penanggung jawab diisi oleh Kepala Seksi Harta Peninggalan Wilayah II. '
     + 'Penanggung jawab bertugas menyiapkan bahan, memastikan kehadiran pihak terkait, memimpin pelaksanaan, serta menyusun laporan kegiatan setelahnya.</div>'
-    + '<div class="ttd"><div class="ttd-in">Medan, ................................ ' + pjTgl(sampai).getFullYear() + '<br>Kepala Seksi Harta Peninggalan Wilayah II,'
-    + '<div class="ttd-cap">ttd.</div><div class="ttd-nama">' + esc(KASI_WILAYAH_II.nama) + '</div><div class="ttd-nip">NIP. ' + esc(KASI_WILAYAH_II.nip) + '</div></div></div>';
+    + '<div class="ttd"><div class="ttd-in">Medan, <span id="pj-tgl-cetak">' + esc(pjPanjang(todayKey())) + '</span><br>Kepala Seksi Harta Peninggalan Wilayah II,'
+    + '<div class="ttd-cap" id="pj-ttd"><span class="ttd-muat">memuat tanda tangan…</span></div><div class="ttd-nama">' + esc(KASI_WILAYAH_II.nama) + '</div><div class="ttd-nip">NIP. ' + esc(KASI_WILAYAH_II.nip) + '</div></div></div>';
 }
-function bukaLembarPJ() {
+function bukaLembarPJ(dariAwal, sampaiAwal) {
   const s0 = pjTgl(S.sel || todayKey()); const senin = new Date(s0); senin.setDate(s0.getDate() - ((s0.getDay() + 6) % 7));
   const minggu = new Date(senin); minggu.setDate(senin.getDate() + 6);
+  const dariV = typeof dariAwal === 'string' ? dariAwal : key(senin), sampaiV = typeof sampaiAwal === 'string' ? sampaiAwal : key(minggu);
+  const lama = document.getElementById('doc-veil'); if (lama) lama.remove();
   const veil = document.createElement('div'); veil.className = 'doc-veil'; veil.id = 'doc-veil';
   veil.innerHTML = '<div class="doc-wrap"><div class="doc-actions">'
     + '<label for="pj-dari">Dari</label><input type="date" id="pj-dari" value="' + key(senin) + '">'
     + '<label for="pj-sampai">Sampai</label><input type="date" id="pj-sampai" value="' + key(minggu) + '">'
     + '<span class="grow"></span><div class="zoom-grp"><button type="button" class="zb" id="pj-kecil" aria-label="Perkecil">−</button>'
     + '<span id="pj-zoom">100%</span><button type="button" class="zb" id="pj-besar" aria-label="Perbesar">+</button></div>'
-    + '<button type="button" class="btn btn-soft" id="pj-tutup">Tutup</button><button type="button" class="btn btn-primary" id="pj-cetak">Cetak / Simpan PDF</button>'
+    + '<button type="button" class="btn btn-soft" id="pj-wa">💬 Bagikan ke WA</button><button type="button" class="btn btn-soft" id="pj-tutup">Tutup</button><button type="button" class="btn btn-primary" id="pj-cetak">Cetak / Simpan PDF</button>'
     + '</div><div class="doc" id="pj-doc"></div></div>';
   document.body.appendChild(veil);
-  const gambar = () => { document.getElementById('pj-doc').innerHTML = htmlLembarPJ(document.getElementById('pj-dari').value, document.getElementById('pj-sampai').value); };
+  const gambar = () => { document.getElementById('pj-doc').innerHTML = htmlLembarPJ(document.getElementById('pj-dari').value, document.getElementById('pj-sampai').value); if (typeof muatTtd === 'function') muatTtd(); };
+  const kunciLembar = () => document.getElementById('pj-dari').value + '_' + document.getElementById('pj-sampai').value;
+  const gambarTtd = data => {
+    const box = document.getElementById('pj-ttd'); if (!box) return;
+    if (data && data.ttd) {
+      box.innerHTML = '<img class="ttd-img" src="' + esc(data.ttd) + '" alt="Tanda tangan Kepala Seksi">'
+        + '<div class="ttd-info">ditandatangani ' + esc(data.oleh || '') + ' · ' + esc(String(data.pada || '').slice(0, 16).replace('T', ' ')) + ' · <button type="button" class="ttd-hapus">hapus</button></div>';
+      box.querySelector('.ttd-hapus').onclick = async () => {
+        if (!confirmTtd('Hapus tanda tangan pada lembar periode ini?')) return;
+        try { await call('apiHapusTtdLembar', kunciLembar()); gambarTtd(null); } catch (err) { toast('Gagal menghapus: ' + (err.message || err)); }
+      };
+    } else {
+      box.innerHTML = '<button type="button" class="btn btn-soft ttd-btn">✍️ Tanda tangani</button>';
+      box.querySelector('.ttd-btn').onclick = bukaPadTtd;
+    }
+  };
+  const muatTtd = async () => {
+    const k = kunciLembar();
+    try { const d = await call('apiAmbilLembar', k); if (k === kunciLembar()) gambarTtd(d); }
+    catch (err) { const box = document.getElementById('pj-ttd'); if (box) box.innerHTML = '<span class="ttd-muat">gagal memuat tanda tangan</span>'; }
+  };
+  const confirmTtd = msg => window.confirm(msg);
+  function bukaPadTtd() {
+    const box = document.getElementById('pj-ttd');
+    box.innerHTML = '<div class="ttd-pad"><canvas width="320" height="120"></canvas>'
+      + '<div class="ttd-pad-aksi"><button type="button" class="btn btn-soft" data-a="ulang">Ulang</button>'
+      + '<button type="button" class="btn btn-soft" data-a="batal">Batal</button>'
+      + '<button type="button" class="btn btn-primary" data-a="simpan">Simpan</button></div></div>';
+    const cv = box.querySelector('canvas'), cx = cv.getContext('2d');
+    cx.lineWidth = 2.2; cx.lineCap = 'round'; cx.lineJoin = 'round'; cx.strokeStyle = '#0A2147';
+    let gambarIni = false, ada = false;
+    const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+    cv.addEventListener('pointerdown', e => { gambarIni = true; ada = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); cx.beginPath(); cx.moveTo(x, y); });
+    cv.addEventListener('pointermove', e => { if (!gambarIni) return; const [x, y] = pos(e); cx.lineTo(x, y); cx.stroke(); });
+    cv.addEventListener('pointerup', () => { gambarIni = false; });
+    box.querySelector('[data-a=ulang]').onclick = () => { cx.clearRect(0, 0, cv.width, cv.height); ada = false; };
+    box.querySelector('[data-a=batal]').onclick = muatTtd;
+    box.querySelector('[data-a=simpan]').onclick = async () => {
+      if (!ada) { toast('Tanda tangan masih kosong'); return; }
+      const btn = box.querySelector('[data-a=simpan]'); btn.disabled = true; btn.textContent = 'Menyimpan…';
+      try {
+        const d = await call('apiTtdLembar', kunciLembar(), document.getElementById('pj-dari').value, document.getElementById('pj-sampai').value, cv.toDataURL('image/png'));
+        gambarTtd(d); toast('✍️ Tanda tangan tersimpan');
+      } catch (err) { btn.disabled = false; btn.textContent = 'Simpan'; toast('Gagal menyimpan: ' + (err.message || err)); }
+    };
+  }
+  const isiTglCetak = () => { const el = document.getElementById('pj-tgl-cetak'); if (el) el.textContent = pjPanjang(todayKey()); };
+  window.addEventListener('beforeprint', isiTglCetak);
   veil.addEventListener('change', async ev => {
     const inp = ev.target.closest('.pj-input'); if (!inp) return;
     const st = inp.nextElementSibling, nama = inp.value.trim();
@@ -2038,12 +2092,19 @@ function bukaLembarPJ() {
   veil.querySelector('#pj-dari').onchange = gambar; veil.querySelector('#pj-sampai').onchange = gambar;
   let zoom = 100;
   const setZoom = v => { zoom = Math.min(200, Math.max(60, v)); document.getElementById('pj-doc').style.zoom = zoom / 100; document.getElementById('pj-zoom').textContent = zoom + '%'; };
-  const tutup = () => { veil.remove(); document.removeEventListener('keydown', escPJ); };
+  const tutup = () => { veil.remove(); document.removeEventListener('keydown', escPJ); window.removeEventListener('beforeprint', isiTglCetak); };
   function escPJ(e) { if (e.key === 'Escape') tutup(); }
   veil.querySelector('#pj-kecil').onclick = () => setZoom(zoom - 10);
   veil.querySelector('#pj-besar').onclick = () => setZoom(zoom + 10);
   veil.querySelector('#pj-tutup').onclick = tutup;
-  veil.querySelector('#pj-cetak').onclick = () => window.print();
+  veil.querySelector('#pj-wa').onclick = () => {
+    const a = document.getElementById('pj-dari').value, b = document.getElementById('pj-sampai').value;
+    const n = visible().filter(e => e.status !== 'Dibatalkan' && e.mulai <= b && e.selesai >= a).length;
+    const teks = '📋 *Lembar Penetapan Penanggung Jawab Kegiatan*\nSeksi Harta Peninggalan Wilayah II\nPeriode ' + pjRentang(a, b) + ' (' + n + ' kegiatan)\n\n'
+      + 'Mohon dilihat, diisi penanggung jawabnya, dan ditandatangani melalui tautan berikut:\n' + shareLink({ lembar: a + '_' + b });
+    shareSheet('Bagikan Lembar PJ', teks);
+  };
+  veil.querySelector('#pj-cetak').onclick = () => { isiTglCetak(); window.print(); };
   veil.onclick = e => { if (e.target === veil) tutup(); };
   document.addEventListener('keydown', escPJ);
   gambar();

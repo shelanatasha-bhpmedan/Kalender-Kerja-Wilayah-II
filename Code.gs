@@ -966,3 +966,49 @@ function apiSetPj(eventId, nama) {
     return val;
   });
 }
+
+/** Lembar PJ: tanda tangan Kepala Seksi per periode (disimpan di sheet "LembarPJ"). */
+function lembarSheet_() {
+  const ss = ss_();
+  let sh = ss.getSheetByName('LembarPJ');
+  if (!sh) {
+    sh = ss.insertSheet('LembarPJ');
+    sh.getRange(1, 1, 1, 6).setValues([['kunci', 'dari', 'sampai', 'ttd', 'oleh', 'pada']]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function lembarCari_(sh, kunci) {
+  const last = sh.getLastRow();
+  if (last < 2) return 0;
+  const keys = sh.getRange(2, 1, last - 1, 1).getDisplayValues();
+  for (let i = 0; i < keys.length; i++) if (keys[i][0] === kunci) return i + 2;
+  return 0;
+}
+function apiAmbilLembar(kunci) {
+  const sh = lembarSheet_();
+  const r = lembarCari_(sh, String(kunci));
+  if (!r) return null;
+  const v = sh.getRange(r, 1, 1, 6).getValues()[0];
+  return { kunci: v[0], dari: v[1], sampai: v[2], ttd: v[3], oleh: v[4], pada: v[5] };
+}
+function apiTtdLembar(kunci, dari, sampai, dataUrl) {
+  if (!/^data:image\/png;base64,/.test(String(dataUrl))) throw new Error('Format tanda tangan tidak valid');
+  if (String(dataUrl).length > 48000) throw new Error('Tanda tangan terlalu besar, ulangi dengan goresan lebih sederhana');
+  return withLock_(function () {
+    const sh = lembarSheet_();
+    const rec = [String(kunci), String(dari), String(sampai), String(dataUrl), me_(), now_()];
+    const r = lembarCari_(sh, rec[0]);
+    if (r) sh.getRange(r, 1, 1, 6).setValues([rec]); else sh.appendRow(rec);
+    log_('TTD LEMBAR PJ', { id: '', judul: 'Lembar PJ ' + dari + ' s.d. ' + sampai }, 'Ditandatangani');
+    return { kunci: rec[0], dari: rec[1], sampai: rec[2], ttd: rec[3], oleh: rec[4], pada: rec[5] };
+  });
+}
+function apiHapusTtdLembar(kunci) {
+  return withLock_(function () {
+    const sh = lembarSheet_();
+    const r = lembarCari_(sh, String(kunci));
+    if (r) { sh.deleteRow(r); log_('TTD LEMBAR PJ', { id: '', judul: 'Lembar PJ ' + kunci }, 'Tanda tangan dihapus'); }
+    return true;
+  });
+}
