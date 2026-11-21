@@ -613,6 +613,31 @@ body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
 .doc td.pj-sel::after{display:none}
 .doc td.pj-sel::before{content:"Penanggung jawab";display:block;font-size:12px;font-weight:700;color:#44536F;margin-bottom:4px}
 }
+.doc-actions .ico{display:none}
+@media screen and (max-width:900px){
+.doc-actions{display:flex!important;flex-wrap:nowrap;align-items:center;gap:5px;padding:6px 8px}
+.doc-actions input[type=date]{flex:1 1 0;min-width:0;height:32px;font-size:12px;padding:0 4px}
+.doc-actions .btn{flex:none;width:36px;height:32px;padding:0;font-size:15px}
+.doc-actions .lbl{display:none}.doc-actions .ico{display:inline}
+.doc{padding:8px 10px 8px;font-size:13px}
+.pj-head{margin-bottom:6px}.pj-head b{font-size:13.5px}.pj-head span{font-size:11.5px}
+.pj-pandu{padding:6px 9px;font-size:11.5px;margin-bottom:8px}.pj-pandu>b{display:none}.pj-pandu ol{margin:0 0 4px;padding-left:16px}
+.pj-prog .bar{flex-basis:60px}
+.doc tr{padding:9px 10px;margin:0;border-radius:10px}
+.doc td.keg b{font-size:14px}.doc td.keg .pihak{font-size:10.5px}
+.doc td{font-size:12px}
+.doc td.pj-sel{margin-top:6px}
+.doc td.pj-sel::before{font-size:11px;margin-bottom:3px}
+.doc .pj-input{height:36px;font-size:13.5px}
+.doc .pj-stat{min-height:0}
+.doc .pj-chips{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
+.doc .pj-chips button{font-size:12px;padding:7px 6px;border-radius:8px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pj-nav{padding-top:8px;gap:6px}
+.pj-nav .btn{padding:9px 4px;font-size:13px}
+.pj-nav .pj-hit{font-size:11.5px}
+.doc .ttd{margin-top:8px}.doc .ttd-in{font-size:12px}
+.doc .catatan{font-size:11px;line-height:1.4}
+}
 </style>
 </head>
 <body>
@@ -2119,7 +2144,7 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
     + '<label for="pj-sampai">Sampai</label><input type="date" id="pj-sampai" value="' + sampaiV + '">'
     + '<span class="grow"></span><div class="zoom-grp"><button type="button" class="zb" id="pj-kecil" aria-label="Perkecil">−</button>'
     + '<span id="pj-zoom">100%</span><button type="button" class="zb" id="pj-besar" aria-label="Perbesar">+</button></div>'
-    + '<button type="button" class="btn btn-soft" id="pj-wa">💬 Bagikan ke WA</button><button type="button" class="btn btn-soft" id="pj-tutup">Tutup</button><button type="button" class="btn btn-primary" id="pj-cetak">Cetak / Simpan PDF</button>'
+    + '<button type="button" class="btn btn-soft" id="pj-wa" title="Bagikan ke WA">💬<span class="lbl"> Bagikan ke WA</span></button><button type="button" class="btn btn-soft" id="pj-tutup" title="Tutup"><span class="ico">✕</span><span class="lbl">Tutup</span></button><button type="button" class="btn btn-primary" id="pj-cetak" title="Cetak / Simpan PDF"><span class="ico">🖨️</span><span class="lbl">Cetak / Simpan PDF</span></button>'
     + '</div><div class="doc" id="pj-doc"></div></div>';
   document.body.appendChild(veil);
   let slide = 0;
@@ -2131,7 +2156,7 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
     doc.insertBefore(head, doc.firstChild);
     const pandu = document.createElement('div'); pandu.className = 'pj-pandu';
     pandu.innerHTML = '<b>Cara mengisi</b><ol><li>Pilih atau ketik <b>penanggung jawab</b> (tersimpan otomatis).</li>'
-      + '<li class="m">Tekan <b>Berikutnya ›</b> untuk kegiatan selanjutnya.</li>'
+      + '<li class="m">Tekan <b>Berikutnya ›</b>.</li>'
       + '<li>Terakhir, tekan <b>✍️ Tanda tangani</b>.</li></ol>'
       + '<div class="pj-prog"><div class="bar"><i></i></div><span></span></div>';
     doc.insertBefore(pandu, tb.parentNode);
