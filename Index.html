@@ -328,6 +328,20 @@ svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
 .tag,.pills button,.rk-bar .pill{border-radius:10px}
 .palette{backdrop-filter:none}
 @media (max-width:900px){.modal{border-radius:14px 14px 0 0}.fab{border-radius:14px}.bnav{border-radius:14px}}
+/* === Kisi kalender ala referensi Try Out UKOM (desktop) === */
+@media (min-width:901px){
+.dow{margin:0 12px;padding:0;background:#F6F8FC;border:1px solid #DCE3EF;border-bottom:1px solid #E9EEF6;border-radius:12px 12px 0 0;font-size:11px;letter-spacing:.04em}
+.dow div{padding:7px 10px}
+.month{gap:1px;padding:0;margin:0 12px 12px;background:#E9EEF6;border:1px solid #DCE3EF;border-top:0;border-radius:0 0 12px 12px;overflow:hidden}
+.cell{border:0;border-radius:0;box-shadow:none}
+.cell:hover{background:#F6F8FC;box-shadow:none}
+.cell.out{opacity:1;background:#F6F8FC}.cell.out .num{color:#A9B4C8}
+.cell.today{box-shadow:none}
+.cell .num{font-size:12.5px;width:auto;min-width:23px;height:22px;border-radius:7px;color:#44536F}
+.cell.today .num{color:#fff}
+.chip{font-size:11.5px;border-radius:6px}
+.wcol{border-radius:12px}
+}
 </style>
 </head>
 <body>
