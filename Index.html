@@ -2100,8 +2100,11 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
   veil.querySelector('#pj-wa').onclick = () => {
     const a = document.getElementById('pj-dari').value, b = document.getElementById('pj-sampai').value;
     const n = visible().filter(e => e.status !== 'Dibatalkan' && e.mulai <= b && e.selesai >= a).length;
-    const teks = '📋 *Lembar Penetapan Penanggung Jawab Kegiatan*\nSeksi Harta Peninggalan Wilayah II\nPeriode ' + pjRentang(a, b) + ' (' + n + ' kegiatan)\n\n'
-      + 'Mohon dilihat, diisi penanggung jawabnya, dan ditandatangani melalui tautan berikut:\n' + shareLink({ lembar: a + '_' + b });
+    const jam = new Date().getHours(), salam = jam < 11 ? 'pagi' : jam < 15 ? 'siang' : jam < 18 ? 'sore' : 'malam';
+    const teks = 'Selamat ' + salam + ', Bu. Izin menyampaikan kegiatan Wilayah II:\n\n'
+      + '📋 *Lembar Penetapan Penanggung Jawab Kegiatan*\nSeksi Harta Peninggalan Wilayah II\nPeriode ' + pjRentang(a, b) + ' (' + n + ' kegiatan)\n\n'
+      + 'Izin, Bu, mohon berkenan menentukan penanggung jawab masing-masing kegiatan serta menandatangani lembar tersebut melalui tautan berikut:\n'
+      + shareLink({ lembar: a + '_' + b }) + '\n\nTerima kasih, Bu. 🙏';
     shareSheet('Bagikan Lembar PJ', teks);
   };
   veil.querySelector('#pj-cetak').onclick = () => { isiTglCetak(); window.print(); };

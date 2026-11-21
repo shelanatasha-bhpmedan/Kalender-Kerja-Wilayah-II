@@ -10,7 +10,7 @@ const PROP = PropertiesService.getScriptProperties();
 const SHEETS = {
   events: ['id', 'judul', 'deskripsi', 'mulai', 'selesai', 'jamMulai', 'jamSelesai', 'seharian',
     'lokasi', 'kategori', 'prioritas', 'status', 'peserta', 'checklist', 'tautan',
-    'dibuatOleh', 'dibuatPada', 'diubahOleh', 'diubahPada', 'dihapus', 'pj'],
+    'dibuatOleh', 'dibuatPada', 'diubahOleh', 'diubahPada', 'dihapus'],
   files: ['id', 'eventId', 'fileId', 'nama', 'mime', 'ukuran', 'url', 'oleh', 'pada', 'dihapus'],
   comments: ['id', 'eventId', 'oleh', 'pada', 'isi'],
   logs: ['waktu', 'pengguna', 'aksi', 'eventId', 'judul', 'detail'],
@@ -241,7 +241,11 @@ function apiBootstrap() {
 function apiVersion() { return Number(PROP.getProperty('VERSION') || 1); }
 
 function apiData() {
-  const events = readAll_('events').filter(function (e) { return e.dihapus !== 'TRUE' && e.id; }).map(parseEvent_);
+  const raw = readAll_('events');
+  const shE = sheet_('events'), pc = pjCol_(shE, false);
+  const pjv = pc && shE.getLastRow() > 1 ? shE.getRange(2, pc, shE.getLastRow() - 1, 1).getDisplayValues() : [];
+  const events = raw.filter(function (e) { return e.dihapus !== 'TRUE' && e.id; })
+    .map(function (e) { const pj = (pjv[e._row - 2] || [''])[0]; const o = parseEvent_(e); o.pj = pj; return o; });
   const files = readAll_('files').filter(function (f) { return f.dihapus !== 'TRUE' && f.id; })
     .map(function (f) { delete f._row; return f; });
   const comments = readAll_('comments').filter(function (c) { return c.id; })
@@ -951,16 +955,24 @@ function apiAddChecklist(eventId, items) {
 }
 
 /** Lembar PJ: simpan penanggung jawab satu kegiatan (diisi Kasi lewat Lembar PJ). */
+function pjCol_(sh, buat) {
+  const lastCol = Math.max(sh.getLastColumn(), SHEETS.events.length);
+  const head = sh.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+  const i = head.indexOf('pj');
+  if (i >= 0) return i + 1;
+  if (!buat) return 0;
+  sh.getRange(1, lastCol + 1).setValue('pj').setFontWeight('bold');
+  return lastCol + 1;
+}
 function apiSetPj(eventId, nama) {
   return withLock_(function () {
     const sh = sheet_('events');
-    const col = SHEETS.events.indexOf('pj') + 1;
-    if (sh.getRange(1, col).getValue() !== 'pj') sh.getRange(1, col).setValue('pj').setFontWeight('bold');
+    const col = pjCol_(sh, true);
     const cur = readAll_('events').filter(function (e) { return e.id === eventId && e.dihapus !== 'TRUE'; })[0];
     if (!cur) throw new Error('Kegiatan tidak ditemukan');
     const val = String(nama || '').trim().slice(0, 120);
     sh.getRange(cur._row, col).setValue(val);
-    const ev = parseEvent_(cur); ev.pj = val;
+    const ev = parseEvent_(cur);
     log_('PJ', ev, val ? 'Penanggung jawab: ' + val : 'Penanggung jawab dikosongkan');
     bump_();
     return val;
