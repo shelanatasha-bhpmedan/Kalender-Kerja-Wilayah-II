@@ -1063,6 +1063,7 @@ function shift(n) { const c = S.cursor; S.view === 'week' ? c.setDate(c.getDate(
 /* ============================================================ berbagi (link pendek bit.ly)
  * Memakai link bit.ly kalender yang sudah ada (tidak membuat link baru). Bitly meneruskan parameter ?ev= / ?d=,
  * sehingga penerima langsung dibawa ke kegiatan atau tanggal yang dibagikan. */
+const LEMBAR_BASE = 'https:\/\/script.google.com/macros/s/AKfycbxZhTNgSluvGvlJcjUjCQTVISnCLOesN60xseYz4cNK2nMfTbU8K3Gw6W9mLtT2pS8F/exec'; // bit.ly membuang parameter, jadi Lembar PJ memakai alamat aplikasi langsung
 const SHARE_BASE = 'https:\/\/bit.ly/kalenderkerjawilayah2';
 function shareLink(p) { return SHARE_BASE + '?' + Object.entries(p).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&'); }
 function shareText(e) {
@@ -1098,7 +1099,7 @@ function openFromLink(p) {
   p = p || {}; const one = v => Array.isArray(v) ? v[0] : v;
   const ev = one(p.ev), d = one(p.d);
   const lb = one(p.lembar);
-  if (lb && /^\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}$/.test(lb)) { const [x, y] = lb.split('_'); bukaLembarPJ(x, y); return; }
+  if (lb && /^\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}$/.test(lb)) { const [x, y] = lb.split('_'); const dv = document.getElementById('pj-dari'); if (dv && dv.value === x && document.getElementById('pj-sampai').value === y) { if (!document.querySelector('#pj-doc .ttd-pad')) dv.dispatchEvent(new Event('change', { bubbles: true })); } else bukaLembarPJ(x, y); return; }
   if (ev) { const e = S.events.find(x => x.id === ev); if (e) { pickDay(e.mulai); openDetail(ev); } else toast('Kegiatan yang dibagikan tidak ditemukan atau sudah dihapus'); }
   else if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) { pickDay(d); if (!matchMedia('(max-width:900px)').matches) { S.view = 'agenda'; render(); } }
 }
@@ -1955,6 +1956,8 @@ function exportRekap() {
   S.view = localStorage.getItem('kkw2-view') || (innerWidth < 900 ? 'month' : 'month');
   // tampilkan cache lebih dulu agar terasa instan
   try { const c = JSON.parse(localStorage.getItem('kkw2-cache')); if (c && IS_GAS) { applyData(c); render(); document.getElementById('loader').remove(); } } catch (e) {}
+  // tautan Lembar PJ: langsung buka dokumennya tanpa menunggu kalender selesai dimuat
+  try { if (IS_GAS && google.script.url) google.script.url.getLocation(loc => { const lb = (loc.parameter || {}).lembar; if (lb) { const l = document.getElementById('loader'); l && l.remove(); openFromLink({ lembar: lb }); } }); } catch (e) {}
   try {
     const d = await call('apiBootstrap');
     S.user = d.user; S.rootUrl = d.rootUrl; S.maxUploadMb = d.maxUploadMb; applyData(d);
@@ -2116,7 +2119,7 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
     const teks = 'Selamat ' + salam + ', Bu. Izin menyampaikan kegiatan Wilayah II:\n\n'
       + '📋 *Lembar Penetapan Penanggung Jawab Kegiatan*\nSeksi Harta Peninggalan Wilayah II\nPeriode ' + pjRentang(a, b) + ' (' + n + ' kegiatan)\n\n'
       + 'Izin, Bu, mohon berkenan menentukan penanggung jawab masing-masing kegiatan serta menandatangani lembar tersebut melalui tautan berikut:\n'
-      + shareLink({ lembar: a + '_' + b }) + '\n\nTerima kasih, Bu. 🙏';
+      + (LEMBAR_BASE + '?lembar=' + a + '_' + b) + '\n\nTerima kasih, Bu. 🙏';
     shareSheet('Bagikan Lembar PJ', teks);
   };
   veil.querySelector('#pj-cetak').onclick = () => { isiTglCetak(); window.print(); };
