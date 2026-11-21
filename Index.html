@@ -2024,8 +2024,8 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
   const lama = document.getElementById('doc-veil'); if (lama) lama.remove();
   const veil = document.createElement('div'); veil.className = 'doc-veil'; veil.id = 'doc-veil';
   veil.innerHTML = '<div class="doc-wrap"><div class="doc-actions">'
-    + '<label for="pj-dari">Dari</label><input type="date" id="pj-dari" value="' + key(senin) + '">'
-    + '<label for="pj-sampai">Sampai</label><input type="date" id="pj-sampai" value="' + key(minggu) + '">'
+    + '<label for="pj-dari">Dari</label><input type="date" id="pj-dari" value="' + dariV + '">'
+    + '<label for="pj-sampai">Sampai</label><input type="date" id="pj-sampai" value="' + sampaiV + '">'
     + '<span class="grow"></span><div class="zoom-grp"><button type="button" class="zb" id="pj-kecil" aria-label="Perkecil">−</button>'
     + '<span id="pj-zoom">100%</span><button type="button" class="zb" id="pj-besar" aria-label="Perbesar">+</button></div>'
     + '<button type="button" class="btn btn-soft" id="pj-wa">💬 Bagikan ke WA</button><button type="button" class="btn btn-soft" id="pj-tutup">Tutup</button><button type="button" class="btn btn-primary" id="pj-cetak">Cetak / Simpan PDF</button>'
