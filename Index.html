@@ -572,24 +572,36 @@ body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
 .doc .ttd-btn{font-size:14px;padding:9px 16px}
 .doc .ttd-pad canvas{max-width:100%;height:auto;aspect-ratio:320/120}
 }
-.pj-nav{display:none}
-@media screen and (max-width:900px){
-.pj-nav{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:0 0 8px}
-.pj-nav .btn{justify-content:center;padding:9px 6px;font-size:13px;border-radius:8px}
-.pj-nav .btn:disabled{opacity:.35}
-.pj-nav .pj-hit{font-size:12px;font-weight:700;color:#44536F;text-align:center;white-space:nowrap}
-.doc tbody tr{display:none!important}
-.doc tbody tr.aktif{display:flex!important;min-height:180px;align-content:flex-start}
-}
-@media print{.pj-nav{display:none!important}.doc tbody tr{display:table-row!important}}
+.pj-head,.pj-nav,.pj-hint{display:none}
 .pj-pandu{background:#FDF4E0;border:1px solid #F2D58F;border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:12px;color:#5A4206}
-.pj-pandu ol{margin:4px 0 8px;padding-left:18px}.pj-pandu li{margin:1px 0}.pj-pandu li.m{display:none}
+.pj-pandu ol{margin:4px 0 8px;padding-left:18px}.pj-pandu li{margin:1px 0}
 .pj-prog{display:flex;align-items:center;gap:8px}.pj-prog .bar{flex:0 0 90px;height:6px;background:#fff;border-radius:6px;overflow:hidden;border:1px solid #F2D58F}
 .pj-prog .bar i{display:block;height:100%;width:0;background:#F2B63C;transition:width .3s}
 .pj-prog span{font-weight:700}
 .pj-pandu.lengkap{background:#E7F5EF;border-color:#A8D9C3;color:#0E5A43}.pj-pandu.lengkap .bar i{background:#0E7A5A}
-@media screen and (max-width:900px){.pj-pandu li.m{display:list-item}.pj-pandu{font-size:12.5px}}
-@media print{.pj-pandu{display:none!important}}
+@media print{.pj-pandu,.pj-head,.pj-nav{display:none!important}.doc tbody tr{display:table-row!important}.doc table{display:table!important}.doc .catatan,.doc .ttd{display:block!important}.doc .ttd{display:flex!important}}
+@media screen and (max-width:900px){
+.doc-veil{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+.doc-wrap{display:flex;flex-direction:column;height:100%;min-height:0}
+.doc-actions{position:static;flex:none}
+.doc{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding:12px 12px 10px}
+.doc>.kop,.doc>.garis,.doc>h1,.doc>.doc-sub,.doc>.doc-periode{display:none}
+.pj-head{display:block;order:0;margin-bottom:8px}.pj-head b{display:block;font-size:15px;color:#0A2147}.pj-head span{font-size:12.5px;color:#44536F}
+.pj-pandu{order:1;margin-bottom:10px;padding:8px 10px}.pj-pandu>b,.pj-pandu ol{display:none}
+.pj-hint{display:block;margin-top:6px;font-size:12.5px;color:#44536F}
+.doc table{order:2}
+.doc .catatan{order:3}.doc .ttd{order:4}
+.pj-nav{display:grid;order:9;margin-top:auto;padding-top:10px;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.pj-nav .btn{justify-content:center;padding:11px 6px;font-size:14px;border-radius:10px}
+.pj-nav .btn:disabled{opacity:.35}
+.pj-nav .pj-hit{font-size:12.5px;font-weight:700;color:#44536F;text-align:center;white-space:nowrap}
+.doc tbody tr{display:none!important}
+.doc tbody tr.aktif{display:flex!important}
+.doc .catatan,.doc .ttd{display:none!important}
+.doc.tahap-ttd table{display:none!important}
+.doc.tahap-ttd .ttd{display:flex!important;margin-top:4px}
+.doc.tahap-ttd .catatan{display:block!important;margin-top:0}
+}
 </style>
 </head>
 <body>
@@ -2102,37 +2114,45 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
   let slide = 0;
   const pasangSlide = () => {
     const doc = document.getElementById('pj-doc'), tb = doc.querySelector('tbody'), rows = [...tb.querySelectorAll('tr')];
-    if (rows.length < 1) return;
-    const nav = document.createElement('div'); nav.className = 'pj-nav';
-    nav.innerHTML = '<button type="button" class="btn btn-soft" data-d="-1">‹ Sebelumnya</button><span class="pj-hit"></span><button type="button" class="btn btn-primary" data-d="1">Berikutnya ›</button>';
+    const n = rows.length;
+    const head = document.createElement('div'); head.className = 'pj-head';
+    head.innerHTML = '<b>Lembar Penanggung Jawab Kegiatan</b><span>Periode ' + esc(pjRentang(document.getElementById('pj-dari').value, document.getElementById('pj-sampai').value)) + '</span>';
+    doc.insertBefore(head, doc.firstChild);
     const pandu = document.createElement('div'); pandu.className = 'pj-pandu';
     pandu.innerHTML = '<b>Cara mengisi</b><ol><li>Pilih atau ketik <b>penanggung jawab</b> tiap kegiatan (tersimpan otomatis).</li>'
-      + '<li class="m">Tekan <b>Berikutnya ›</b> untuk kegiatan selanjutnya.</li><li>Setelah semua terisi, tekan <b>✍️ Tanda tangani</b> di bagian bawah.</li></ol>'
-      + '<div class="pj-prog"><div class="bar"><i></i></div><span></span></div>';
-    tb.parentNode.parentNode.insertBefore(pandu, tb.parentNode);
-    tb.parentNode.parentNode.insertBefore(nav, tb.parentNode);
+      + '<li>Setelah semua terisi, tekan <b>✍️ Tanda tangani</b> di bagian bawah.</li></ol>'
+      + '<div class="pj-prog"><div class="bar"><i></i></div><span></span></div><div class="pj-hint"></div>';
+    doc.insertBefore(pandu, tb.parentNode);
+    const nav = document.createElement('div'); nav.className = 'pj-nav';
+    nav.innerHTML = '<button type="button" class="btn btn-soft" data-d="-1">‹ Kembali</button><span class="pj-hit"></span><button type="button" class="btn btn-primary" data-d="1">Berikutnya ›</button>';
+    doc.appendChild(nav);
     const hitung = () => {
       const inp = [...doc.querySelectorAll('.pj-input')], isi = inp.filter(x => x.value.trim()).length;
       pandu.querySelector('.bar i').style.width = (inp.length ? isi / inp.length * 100 : 0) + '%';
-      pandu.querySelector('.pj-prog span').textContent = isi === inp.length ? '✓ Semua kegiatan sudah ada penanggung jawabnya. Silakan tanda tangani di bawah.' : isi + ' dari ' + inp.length + ' kegiatan sudah ada penanggung jawabnya';
+      pandu.querySelector('.pj-prog span').textContent = isi === inp.length ? '✓ Semua kegiatan sudah ada penanggung jawabnya' : isi + ' dari ' + inp.length + ' kegiatan sudah terisi';
       pandu.classList.toggle('lengkap', isi === inp.length);
     };
+    const tampil = i => {
+      slide = Math.max(0, Math.min(n, i));
+      const ttd = slide === n;
+      doc.classList.toggle('tahap-ttd', ttd);
+      rows.forEach((r, k) => r.classList.toggle('aktif', k === slide));
+      nav.querySelector('.pj-hit').textContent = ttd ? 'Tanda tangan' : 'Kegiatan ' + (slide + 1) + ' / ' + n;
+      nav.querySelector('[data-d="-1"]').disabled = slide === 0;
+      const nx = nav.querySelector('[data-d="1"]');
+      nx.style.visibility = ttd ? 'hidden' : 'visible';
+      nx.textContent = slide === n - 1 ? 'Tanda tangan ›' : 'Berikutnya ›';
+      pandu.querySelector('.pj-hint').textContent = ttd ? 'Langkah terakhir: periksa lalu tekan ✍️ Tanda tangani. Bisa kembali untuk mengubah isian.'
+        : 'Pilih penanggung jawab, lalu tekan ' + (slide === n - 1 ? '"Tanda tangan ›".' : '"Berikutnya ›".');
+      doc.scrollTop = 0;
+    };
+    nav.onclick = ev => { const b = ev.target.closest('[data-d]'); if (b && !b.disabled) tampil(slide + Number(b.dataset.d)); };
+    let x0 = null;
+    doc.addEventListener('touchstart', ev => { if (ev.target.closest('canvas')) return; x0 = ev.touches[0].clientX; }, { passive: true });
+    doc.addEventListener('touchend', ev => { if (x0 === null) return; const dx = ev.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) tampil(slide + (dx < 0 ? 1 : -1)); });
     doc.addEventListener('input', ev => { if (ev.target.closest('.pj-input')) hitung(); });
     doc.addEventListener('change', ev => { if (ev.target.closest('.pj-input')) hitung(); });
-    hitung();
-    const tampil = i => {
-      slide = Math.max(0, Math.min(rows.length - 1, i));
-      rows.forEach((r, k) => r.classList.toggle('aktif', k === slide));
-      nav.querySelector('.pj-hit').textContent = 'Kegiatan ' + (slide + 1) + ' dari ' + rows.length;
-      nav.querySelector('[data-d="-1"]').disabled = slide === 0;
-      const nx = nav.querySelector('[data-d="1"]'); nx.disabled = false;
-      nx.textContent = slide === rows.length - 1 ? 'Ke tanda tangan ↓' : 'Berikutnya ›';
-    };
-    nav.onclick = ev => { const b = ev.target.closest('[data-d]'); if (!b) return; if (b.dataset.d === '1' && slide === rows.length - 1) { const t = doc.querySelector('.ttd'); t && t.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; } tampil(slide + Number(b.dataset.d)); };
-    let x0 = null;
-    tb.addEventListener('touchstart', ev => { x0 = ev.touches[0].clientX; }, { passive: true });
-    tb.addEventListener('touchend', ev => { if (x0 === null) return; const dx = ev.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) tampil(slide + (dx < 0 ? 1 : -1)); });
-    tampil(Math.min(slide, rows.length - 1));
+    hitung(); tampil(Math.min(slide, n));
   };
   const gambar = () => { document.getElementById('pj-doc').innerHTML = htmlLembarPJ(document.getElementById('pj-dari').value, document.getElementById('pj-sampai').value); pasangSlide(); if (typeof muatTtd === 'function') muatTtd(); };
   const kunciLembar = () => document.getElementById('pj-dari').value + '_' + document.getElementById('pj-sampai').value;
