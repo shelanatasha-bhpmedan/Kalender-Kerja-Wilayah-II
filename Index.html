@@ -638,6 +638,9 @@ body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
 .doc .ttd{margin-top:8px}.doc .ttd-in{font-size:12px}
 .doc .catatan{font-size:11px;line-height:1.4}
 }
+.doc .ttd-terima{margin-top:8px;padding:8px 10px;border-radius:8px;background:#E7F5EF;border:1px solid #A8D9C3;color:#0E5A43;font-size:11.5px;font-weight:600;line-height:1.4}
+@media print{.doc .ttd-terima{display:none!important}}
+@media screen and (max-width:900px){.doc .ttd-terima{font-size:13px;padding:10px 12px}}
 </style>
 </head>
 <body>
@@ -2093,10 +2096,11 @@ function exportRekap() {
 })();
 
 /* ============================================================ lembar penetapan penanggung jawab */
-const TIM_BHP = ['Syuhada, S.H., M.Hum.', 'Elsintha Damayanti, S.H.', 'Andre Yosua Surbakti, S.E.', 'Annisa Dwi Marina, S.E.', 'Yusril Ihza Mahendra', 'Nur Fairuz Diba Nasution', 'Shela Natasha, S.H.'];
+const TIM_BHP = ['Syuhada, S.H., M.Hum.', 'Elsintha Damayanti, S.H.', 'Andre Yosua Surbakti, S.E.', 'Annisa Dwi Marina, S.E.', 'Yusril Ihza Mahendra', 'Nur Fairuz Diba Nasution', 'Mariani Marbun', 'Shela Natasha, S.H.'];
 const KASI_WILAYAH_II = { nama: 'Elsintha Damayanti, S.H.', nip: '197105051992032001' };
 const PJ_HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const PJ_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+function pjWaktu(v) { const d = new Date(v); if (isNaN(d)) return String(v || ''); return d.getDate() + ' ' + PJ_BULAN[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear() + ', ' + String(d.getHours()).padStart(2, '0') + '.' + String(d.getMinutes()).padStart(2, '0') + ' WIB'; }
 function pjTgl(k) { const [y, m, d] = String(k).split('-').map(Number); return new Date(y, m - 1, d); }
 function pjPendek(k) { const x = pjTgl(k); return x.getDate() + ' ' + PJ_BULAN[x.getMonth()].slice(0, 3) + ' ' + x.getFullYear(); }
 function pjPanjang(k) { const x = pjTgl(k); return x.getDate() + ' ' + PJ_BULAN[x.getMonth()] + ' ' + x.getFullYear(); }
@@ -2196,7 +2200,8 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
     const box = document.getElementById('pj-ttd'); if (!box) return;
     if (data && data.ttd) {
       box.innerHTML = '<img class="ttd-img" src="' + esc(data.ttd) + '" alt="Tanda tangan Kepala Seksi">'
-        + '<div class="ttd-info">ditandatangani ' + esc(data.oleh || '') + ' · ' + esc(String(data.pada || '').slice(0, 16).replace('T', ' ')) + ' · <button type="button" class="ttd-hapus">hapus</button></div>';
+        + '<div class="ttd-info">ditandatangani ' + esc(data.oleh || '') + ' · ' + esc(pjWaktu(data.pada)) + ' · <button type="button" class="ttd-hapus">hapus</button></div>'
+        + '<div class="ttd-terima">🙏 Terima kasih, Bu. Berkas versi yang sudah ditandatangani akan dibagikan tim ke grup.</div>';
       box.querySelector('.ttd-hapus').onclick = async () => {
         if (!confirmTtd('Hapus tanda tangan pada lembar periode ini?')) return;
         try { await call('apiHapusTtdLembar', kunciLembar()); gambarTtd(null); } catch (err) { toast('Gagal menghapus: ' + (err.message || err)); }
