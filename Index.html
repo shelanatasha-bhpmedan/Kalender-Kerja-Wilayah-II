@@ -641,6 +641,23 @@ body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
 .doc .ttd-terima{margin-top:8px;padding:8px 10px;border-radius:8px;background:#E7F5EF;border:1px solid #A8D9C3;color:#0E5A43;font-size:11.5px;font-weight:600;line-height:1.4}
 @media print{.doc .ttd-terima{display:none!important}}
 @media screen and (max-width:900px){.doc .ttd-terima{font-size:13px;padding:10px 12px}}
+@media screen and (max-width:900px){
+.pj-head{display:flex!important;align-items:baseline;gap:6px;margin-bottom:6px}.pj-head b{font-size:13px}.pj-head span{font-size:12px}
+.pj-head span::before{content:"· "}
+.doc.tahap-ttd .catatan{display:none!important}
+.doc .ttd{margin-top:2px}.doc .ttd-in{font-size:11.5px;line-height:1.35}
+.doc .ttd-cap{min-height:48px;margin:6px 0 8px}
+.doc .ttd-img{height:52px}
+.doc .ttd-info{font-size:9.5px}
+.doc .ttd-terima{font-size:12px;padding:8px 10px;margin-top:6px}
+.doc .ttd-nama{font-size:12px}.doc .ttd-nip{font-size:11px}
+.doc .ttd-pad canvas{max-height:130px}
+.pj-nav .btn{padding:8px 4px;font-size:12.5px;border-radius:9px}
+.doc tr{padding:8px 9px}
+.doc td.keg b{font-size:13.5px}
+.doc .pj-chips button{padding:6px 4px;font-size:11.5px}
+.doc .pj-input{height:34px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -2156,7 +2173,7 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
     const doc = document.getElementById('pj-doc'), tb = doc.querySelector('tbody'), rows = [...tb.querySelectorAll('tr')];
     const n = rows.length;
     const head = document.createElement('div'); head.className = 'pj-head';
-    head.innerHTML = '<b>Lembar Penanggung Jawab Kegiatan</b><span>Periode ' + esc(pjRentang(document.getElementById('pj-dari').value, document.getElementById('pj-sampai').value)) + '</span>';
+    head.innerHTML = '<b>Lembar PJ</b><span>' + esc(pjRentang(document.getElementById('pj-dari').value, document.getElementById('pj-sampai').value)) + '</span>';
     doc.insertBefore(head, doc.firstChild);
     const pandu = document.createElement('div'); pandu.className = 'pj-pandu';
     pandu.innerHTML = '<b>Cara mengisi</b><ol><li>Pilih atau ketik <b>penanggung jawab</b> (tersimpan otomatis).</li>'
@@ -2201,7 +2218,7 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
     if (data && data.ttd) {
       box.innerHTML = '<img class="ttd-img" src="' + esc(data.ttd) + '" alt="Tanda tangan Kepala Seksi">'
         + '<div class="ttd-info">ditandatangani ' + esc(data.oleh || '') + ' · ' + esc(pjWaktu(data.pada)) + ' · <button type="button" class="ttd-hapus">hapus</button></div>'
-        + '<div class="ttd-terima">🙏 Terima kasih, Bu. Berkas versi yang sudah ditandatangani akan dibagikan tim ke grup.</div>';
+        + '<div class="ttd-terima">🙏 Terima kasih, Bu. Berkas versi yang sudah ditandatangani akan dibagikan tim ke grup.<br>Ibu sudah bisa menutup halaman ini 🙏☺️</div>';
       box.querySelector('.ttd-hapus').onclick = async () => {
         if (!confirmTtd('Hapus tanda tangan pada lembar periode ini?')) return;
         try { await call('apiHapusTtdLembar', kunciLembar()); gambarTtd(null); } catch (err) { toast('Gagal menghapus: ' + (err.message || err)); }
