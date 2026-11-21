@@ -9,11 +9,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f4f5f7; --bg2:#f7f8fa; --card:#fff; --card-solid:#fff; --line:#e4e7ef;
-  --text:#2a3150; --muted:#737891; --accent:#2a3354; --accent2:#e3b95a; --accent-soft:#eff1f7;
-  --gold:#e3b95a; --gold-soft:#fbf4e2; --navy:#2a3354; --navy2:#343e66;
-  --danger:#c2545f; --ok:#0f9d6b; --warn:#c2410c; --shadow:0 1px 2px rgba(27,35,69,.05),0 8px 24px -16px rgba(27,35,69,.25);
-  --r:16px; --blur:none; color-scheme:light;
+  --bg:#EEF1F7; --bg2:#F6F8FC; --card:#FFFFFF; --card-solid:#FFFFFF; --line:#DCE3EF;
+  --text:#0F1C33; --muted:#7A88A3; --accent:#143059; --accent2:#F2B63C; --accent-soft:#EEF1F7;
+  --gold:#F2B63C; --gold-soft:#FDF4E0; --navy:#143059; --navy2:#1F4274;
+  --danger:#C9344B; --ok:#0E7A5A; --warn:#c2410c; --shadow:0 1px 2px rgba(2,25,50,.06);
+  --r:10px; --blur:none; color-scheme:light;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
@@ -317,6 +317,17 @@ kbd{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6p
 @media print{.side,.top,.quick,.bnav,.fab{display:none!important}.app{display:block}body{overflow:visible}}
 .search svg{flex:none}
 svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* === Tema Pengayoman (palet lambang kop BHP): penimpa untuk hal di luar variabel === */
+.side{background:#0A2147!important;border-top:3px solid #F2B63C!important;border-radius:14px}
+.brand-strip{background:#F2B63C}
+.btn-primary{background:#F2B63C;color:#021932;box-shadow:none}
+.btn{border-radius:10px}
+.cell.today{background:#FDF4E0;border-color:#F2B63C}
+.cell.today .num{background:#143059;color:#fff}
+.top,.view,.lane,.kpi,.panel,.modal,.drop-zone,.detail-hero,.palette .box{border-radius:14px}
+.tag,.pills button,.rk-bar .pill{border-radius:10px}
+.palette{backdrop-filter:none}
+@media (max-width:900px){.modal{border-radius:14px 14px 0 0}.fab{border-radius:14px}.bnav{border-radius:14px}}
 </style>
 </head>
 <body>
