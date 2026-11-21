@@ -428,6 +428,38 @@ body{background:#EEF1F7}
   .doc .pj-sel::after{display:none}
   @page{size:A4 portrait;margin:14mm}
 }
+/* === Pas satu layar (laptop & HP): tanpa gulir halaman === */
+html,body{height:100%;overflow:hidden}
+body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
+.masthead{flex:none}
+.masthead-in{max-width:1440px;margin:0 auto;padding:8px 0;padding-top:calc(8px + env(safe-area-inset-top,0px));gap:10px}
+.masthead .brand .logo{width:34px;height:34px}
+.masthead .brand b{font-size:15px}
+.app{flex:1 1 auto;min-height:0;height:auto!important;width:100%;max-width:1440px;margin:0 auto}
+.main,.view,.month{min-height:0}
+.month{grid-auto-rows:minmax(0,1fr)}
+@media (min-width:901px){
+.app{grid-template-columns:minmax(0,1fr) 280px;padding:10px 14px 12px;gap:10px}
+.main{gap:8px}
+.top{padding:7px 10px;flex-wrap:nowrap;gap:6px;min-width:0}
+.top .search{flex:1 1 140px;min-width:110px}.top kbd{display:none}
+.top h1{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.quick{padding:5px 6px 5px 10px}
+.side{overflow:hidden;padding:14px;gap:12px}
+.side>div:has(#upcoming){flex:1 1 auto;min-height:0;overflow:hidden}
+.side>div:last-child{margin-top:0!important}
+}
+@media (min-width:901px) and (max-width:1250px){
+.app{grid-template-columns:minmax(0,1fr) 240px}
+.top .seg button{padding:6px 9px}
+.top .btn{padding:6px 10px}
+}
+@media (max-width:900px){
+.masthead{padding:0 10px}.masthead-in{padding:6px 0;padding-top:calc(6px + env(safe-area-inset-top,0px))}
+.masthead .brand .logo{width:30px;height:30px}.masthead .brand b{font-size:14px}
+.app{display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);padding:8px 8px 82px}
+.top{flex-wrap:wrap}.quick{min-width:0}
+}
 </style>
 </head>
 <body>
