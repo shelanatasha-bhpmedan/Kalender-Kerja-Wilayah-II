@@ -317,30 +317,66 @@ kbd{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6p
 @media print{.side,.top,.quick,.bnav,.fab{display:none!important}.app{display:block}body{overflow:visible}}
 .search svg{flex:none}
 svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-/* === Tema Pengayoman (palet lambang kop BHP): penimpa untuk hal di luar variabel === */
-.side{background:#0A2147!important;border-top:3px solid #F2B63C!important;border-radius:14px}
-.brand-strip{background:#F2B63C}
-.btn-primary{background:#F2B63C;color:#021932;box-shadow:none}
-.btn{border-radius:10px}
-.cell.today{background:#FDF4E0;border-color:#F2B63C}
-.cell.today .num{background:#143059;color:#fff}
-.top,.view,.lane,.kpi,.panel,.modal,.drop-zone,.detail-hero,.palette .box{border-radius:14px}
-.tag,.pills button,.rk-bar .pill{border-radius:10px}
+/* === Tampilan ala Try Out UKOM (palet lambang Pengayoman) === */
+body{background:#EEF1F7}
+.masthead{background:#0A2147;border-bottom:3px solid #F2B63C;padding:0 16px}
+.masthead-in{display:flex;align-items:center;gap:13px;padding:11px 0;padding-top:calc(11px + env(safe-area-inset-top,0px))}
+.masthead .brand{display:flex;align-items:center;gap:13px;padding:0;border:0}
+.masthead .brand .logo{width:40px;height:40px;flex:0 0 auto;border-radius:9px;background:#fff;padding:3px;object-fit:contain}
+.masthead .brand b{display:block;margin:0;font-size:16px;font-weight:700;color:#fff;line-height:1.2}
+.masthead .brand small{display:block;margin-top:1px;font-family:Lora,Georgia,"Times New Roman",serif;font-size:12px;color:#C3D0E6}
+.masthead .spacer{flex:1 1 auto}
+.masthead .live{color:#BCC9E0;font-size:11.5px}
+.masthead .icon-btn{width:34px;height:34px;border-radius:9px;color:#E6ECF8;border:1px solid rgba(255,255,255,.18);background:none}
+.masthead .icon-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.masthead .avatar{width:30px;height:30px;font-size:11px;border:2px solid #0A2147;box-shadow:0 0 0 1.5px #F2B63C}
+.top,.quick,.view{background:#fff!important;border:1px solid #DCE3EF!important;border-radius:12px;box-shadow:0 1px 2px rgba(15,28,51,.05)}
+.top{padding:10px 12px}
+.top h1{font-size:15px;font-weight:700}
+.top .icon-btn{width:32px;height:32px;border-radius:8px;border:1px solid #DCE3EF;color:#44536F}
+.top .icon-btn:hover{border-color:#5B78A8;color:#143059;background:#F6F8FC}
+.btn{border-radius:9px}
+.btn-soft{background:#fff;border:1px solid #DCE3EF;color:#44536F;font-size:13px}
+.btn-soft:hover{border-color:#5B78A8;color:#143059;background:#F6F8FC}
+.btn-primary{background:#143059;color:#fff;font-size:13px;box-shadow:none}
+.btn-primary:hover{background:#1F4274;filter:none}
+.seg{background:#EDF1F8;border:0;border-radius:9px;padding:3px;gap:2px}
+.seg button{border-radius:7px;font-size:13px;color:#44536F;padding:6px 13px}
+.seg button.on{background:#fff;color:#143059;box-shadow:0 1px 2px rgba(15,28,51,.05)}
+.vmore summary{background:#fff;border:1px solid #DCE3EF;border-radius:8px;color:#44536F;font-size:13px}
+.vmore summary.on{background:#EDF1F8;color:#143059}
+.search{height:32px;border-radius:8px;background:#fff}
+.brand-strip{display:none}
+.lane,.kpi,.panel,.modal,.drop-zone,.detail-hero,.palette .box,.wcol{border-radius:12px}
+.tag,.pills button,.rk-bar .pill{border-radius:8px}
 .palette{backdrop-filter:none}
-@media (max-width:900px){.modal{border-radius:14px 14px 0 0}.fab{border-radius:14px}.bnav{border-radius:14px}}
-/* === Kisi kalender ala referensi Try Out UKOM (desktop) === */
+.cell.today{background:#FDF4E0;border-color:#F2B63C;box-shadow:none}
+.cell.today .num{background:#143059;color:#fff}
+/* panel kanan (bekas bilah sisi) */
+.side{background:#fff!important;color:#0F1C33;border:1px solid #DCE3EF!important;border-radius:12px;box-shadow:0 1px 2px rgba(15,28,51,.05)}
+.side .sec-title{color:#7A88A3;opacity:1;font-size:11px;letter-spacing:.08em}
+.side .icon-btn{color:#44536F;width:28px;height:28px}.side .icon-btn:hover{background:#F6F8FC;color:#143059}
+.side .mini .h{color:#7A88A3}.side .mini span:not(.h):hover{background:#F6F8FC}
+.side .mini .t{background:#143059;color:#fff}
+.side .mini span.has::after{background:#F2B63C}
+.side .cats label:hover,.side .up .it:hover{background:#F6F8FC}
+.side .cats label span[style]{color:#44536F!important}.side .cats .n{color:#7A88A3}
+.side .up .d{background:#FDF4E0;color:#8A6207}.side .up .d b{color:#0F1C33}.side .up small{color:#7A88A3!important}
+.side .switch i{background:#DCE3EF}
+.side .btn-soft{background:#F6F8FC;border-color:#DCE3EF;color:#44536F}
 @media (min-width:901px){
-.dow{margin:0 12px;padding:0;background:#F6F8FC;border:1px solid #DCE3EF;border-bottom:1px solid #E9EEF6;border-radius:12px 12px 0 0;font-size:11px;letter-spacing:.04em}
+.app{grid-template-columns:minmax(0,1fr) 340px;height:calc(100dvh - 67px);padding:14px 16px;gap:12px}
+.side{order:2}
+.side>.btn-primary{display:none}
+.dow{margin:0;padding:0;background:#F6F8FC;border-bottom:1px solid #E9EEF6;font-size:11px;letter-spacing:.04em;text-transform:none}
 .dow div{padding:7px 10px}
-.month{gap:1px;padding:0;margin:0 12px 12px;background:#E9EEF6;border:1px solid #DCE3EF;border-top:0;border-radius:0 0 12px 12px;overflow:hidden}
-.cell{border:0;border-radius:0;box-shadow:none}
-.cell:hover{background:#F6F8FC;box-shadow:none}
+.month{gap:1px;padding:0;background:#E9EEF6}
+.cell{border:0;border-radius:0;box-shadow:none;background:#fff}
+.cell:hover{background:#F6F8FC;border-color:transparent;box-shadow:none}
 .cell.out{opacity:1;background:#F6F8FC}.cell.out .num{color:#A9B4C8}
-.cell.today{box-shadow:none}
 .cell .num{font-size:12.5px;width:auto;min-width:23px;height:22px;padding:0 5px;align-self:flex-start;border-radius:7px;color:#44536F}
 .cell.today .num{color:#fff}
 .chip{font-size:11.5px;border-radius:6px}
-.wcol{border-radius:12px}
 }
 /* === Bilah atas navy bergaris emas ala referensi === */
 .top{background:#0A2147!important;border:0!important;border-bottom:3px solid #F2B63C!important;border-radius:14px;color:#fff}
@@ -390,17 +426,119 @@ svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
 
 /* hari ini di kalender kecil sisi: emas di atas navy */
 .side .mini .t{background:var(--gold);color:var(--navy);font-weight:800}
+@media (max-width:900px){.masthead .brand small{display:none}.modal{border-radius:14px 14px 0 0}.fab,.bnav{border-radius:14px}}
+/* === Lembar penetapan penanggung jawab kegiatan === */
+.doc-veil{position:fixed;inset:0;z-index:120;background:rgba(2,25,50,.45);overflow-y:auto;padding:18px}
+.doc-wrap{max-width:880px;margin:0 auto}
+.doc-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:12px;background:#fff;border-radius:10px;padding:10px 12px}
+.doc-actions label{font-size:12px;font-weight:600;color:#44536F}
+.doc-actions .grow{flex:1}
+.doc-actions input[type=date]{height:32px;border:1px solid #DCE3EF;border-radius:8px;padding:0 9px;font-size:12.5px}
+.zoom-grp{display:flex;align-items:center;gap:6px}
+.zoom-grp span{font-size:12px;font-weight:600;min-width:40px;text-align:center}
+.doc-actions .zb{width:32px;height:32px;border-radius:8px;border:1px solid #DCE3EF;color:#44536F}
+.doc{background:#fff;color:#111;padding:28px 32px 36px;border-radius:4px;box-shadow:0 22px 54px -20px rgba(2,25,50,.55);font-size:12px;line-height:1.5}
+.doc .kop{display:flex;align-items:center;gap:14px;justify-content:center;text-align:center}
+.doc .kop img{width:60px;height:68px;object-fit:contain;flex:0 0 auto}
+.doc .kop b{font-size:13.5px}
+.doc .kop p{margin:0;line-height:1.35}
+.doc .kop .kecil{font-size:10.5px}
+.doc .garis{border:0;border-top:1.5px solid #111;margin:9px 0 18px}
+.doc h1{font-size:13.5px;text-align:center;margin:0;letter-spacing:.02em;text-decoration:underline}
+.doc .doc-sub{text-align:center;margin:4px 0 0;font-size:12.5px;font-weight:700}
+.doc .doc-periode{text-align:center;margin:2px 0 18px;font-size:11.5px}
+.doc table{width:100%;border-collapse:collapse;font-size:11px}
+.doc th,.doc td{border:1px solid #111;padding:5px 6px;vertical-align:top}
+.doc th{background:#EEF1F7;font-size:10.5px;text-align:center}
+.doc td.tengah{text-align:center;white-space:nowrap}
+.doc .pihak{font-size:10px;color:#333}
+.doc .pj-input{width:100%;border:1px solid #C3CAD8;border-radius:3px;background:#FBFCFE;font:inherit;font-size:10.5px;padding:4px 20px 4px 6px;outline:none}
+.doc .pj-input:focus{border-color:#1F4274;background:#fff}
+.doc .pj-sel{position:relative}
+.doc .pj-sel::after{content:"";position:absolute;right:7px;top:50%;width:0;height:0;margin-top:-1px;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:4px solid #5B78A8;pointer-events:none}
+.doc td.paraf{height:48px}
+.doc .ttd{margin-top:28px;display:flex;justify-content:flex-end}
+.doc .ttd-in{width:290px;text-align:center;font-size:11.5px}
+.doc .ttd-cap{margin:18px 0 22px}
+.doc .ttd-nama{font-weight:700;text-decoration:underline}
+.doc .ttd-nip{margin-top:2px}
+.doc .catatan{margin-top:16px;font-size:10.5px;line-height:1.55}
+.doc .catatan b{display:block;margin-bottom:2px}
+@media print{
+  body>*:not(.doc-veil){display:none!important}
+  .doc-veil{position:static;background:none;padding:0;overflow:visible}
+  .doc-wrap{max-width:none}.doc-actions{display:none!important}
+  .doc{box-shadow:none;border-radius:0;padding:0;zoom:1!important}
+  .doc tr{break-inside:avoid}
+  .doc .pj-input{border:0;border-bottom:1px dotted #555;border-radius:0;background:none;padding:2px 0;font-size:10px}
+  .doc .pj-input::placeholder{color:transparent}
+  .doc .pj-input::-webkit-calendar-picker-indicator{display:none}
+  .doc .pj-sel::after{display:none}
+  @page{size:A4 portrait;margin:14mm}
+}
+/* === Pas satu layar (laptop & HP): tanpa gulir halaman === */
+html,body{height:100%;overflow:hidden}
+body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
+.masthead{flex:none}
+.masthead-in{max-width:1440px;margin:0 auto;padding:8px 0;padding-top:calc(8px + env(safe-area-inset-top,0px));gap:10px}
+.masthead .brand .logo{width:34px;height:34px}
+.masthead .brand b{font-size:15px}
+.app{flex:1 1 auto;min-height:0;height:auto!important;width:100%;max-width:1440px;margin:0 auto}
+.main,.view,.month{min-height:0}
+.month{grid-auto-rows:minmax(0,1fr)}
+@media (min-width:901px){
+.app{grid-template-columns:minmax(0,1fr) 280px;padding:10px 14px 12px;gap:10px}
+.main{gap:8px}
+.top{padding:7px 10px;flex-wrap:nowrap;gap:6px;min-width:0}
+.top .search{flex:1 1 140px;min-width:110px}.top kbd{display:none}
+.top h1{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.quick{padding:5px 6px 5px 10px}
+.side{overflow:hidden;padding:14px;gap:12px}
+.side>div:has(#upcoming){flex:1 1 auto;min-height:0;overflow:hidden}
+.side>div:last-child{margin-top:0!important}
+}
+@media (min-width:901px) and (max-width:1250px){
+.app{grid-template-columns:minmax(0,1fr) 240px}
+.top .seg button{padding:6px 9px}
+.top .btn{padding:6px 10px}
+}
+@media (max-width:900px){
+.masthead{padding:0 10px}.masthead-in{padding:6px 0;padding-top:calc(6px + env(safe-area-inset-top,0px))}
+.masthead .brand .logo{width:30px;height:30px}.masthead .brand b{font-size:14px}
+.app{display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);padding:8px 8px 82px}
+.top{flex-wrap:wrap}.quick{min-width:0}
+}
+/* === Layar lebar: tiga kolom (kiri navigasi, tengah kalender, kanan akan datang) === */
+@media (min-width:1300px){
+.app{max-width:none;grid-template-columns:230px minmax(0,1fr) 270px;grid-template-rows:auto auto minmax(0,1fr) auto;padding:10px 14px 12px}
+.side{display:contents}
+.main{grid-column:2;grid-row:1/-1}
+.side>div{background:#fff;border:1px solid #DCE3EF;border-radius:12px;box-shadow:0 1px 2px rgba(15,28,51,.05);padding:12px;min-height:0;color:#0F1C33}
+.side>div:nth-of-type(1){grid-column:1;grid-row:1}
+.side>div:nth-of-type(2){grid-column:1;grid-row:2;overflow:hidden}
+.side>div:nth-of-type(3){grid-column:1;grid-row:3;align-self:start}
+.side>div:has(#upcoming){grid-column:3;grid-row:1/4;overflow:auto}
+.side>div:last-child{grid-column:3;grid-row:4;margin-top:0!important}
+.side .cats{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 <div class="loader" id="loader"><div></div></div>
 
-<div class="app">
-  <aside class="side glass" id="side">
-    <div class="brand">
+<header class="masthead"><div class="masthead-in">
+  <div class="brand">
       <img class="logo" id="brandLogo" alt="Logo Kementerian Hukum">
       <div><b>Kalender Kerja Wilayah II</b><small>Balai Harta Peninggalan Medan</small></div>
     </div>
+  <div class="spacer"></div>
+      <div class="live" id="live" title="Sinkron realtime"><i></i><span class="hide-m">Live</span></div>
+      <button class="icon-btn hide-m" onclick="openPalette()" title="Menu cepat"><svg><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+      <div class="avatar" id="me"></div>
+</div></header>
+
+<div class="app">
+  <aside class="side glass" id="side">
     <div class="brand-strip"></div>
     <button class="btn btn-primary" onclick="openForm()"><svg><path d="M12 5v14M5 12h14"/></svg>Kegiatan Baru</button>
     <div>
@@ -440,12 +578,11 @@ svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
       <details class="vmore hide-m" id="vmore"><summary id="vmoreLbl">Lainnya ▾</summary>
         <div><button data-v="board">📋 Papan Kanban</button><button data-v="stats">📊 Statistik</button><button data-v="log">📜 Log Aktivitas</button></div></details>
       <div class="grow hide-m"></div>
+      <button class="btn btn-soft hide-m" onclick="bukaLembarPJ()" title="Lembar penetapan penanggung jawab kegiatan (dokumen cetak untuk Kasi)">🖨️ Lembar PJ</button>
+      <button class="btn btn-primary hide-m" onclick="openForm()">+ Kegiatan</button>
       <div class="search"><svg><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="q" placeholder="Cari kegiatan, lokasi, orang…" oninput="render()"><kbd class="hide-m">Ctrl K</kbd></div>
       <button class="icon-btn" onclick="shareDay(S.sel)" title="Bagikan kegiatan di tanggal terpilih (link bit.ly)"><svg><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
-      <div class="live" id="live" title="Sinkron realtime"><i></i><span class="hide-m">Live</span></div>
-      <button class="icon-btn hide-m" onclick="openPalette()" title="Menu cepat"><svg><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
-      <div class="avatar" id="me"></div>
     </div>
 
     <div class="quick glass">
@@ -1831,6 +1968,74 @@ function exportRekap() {
   }, 15000);
   setInterval(() => { if (S.view === 'month' || S.view === 'agenda') renderSide(); }, 60000);
 })();
+
+/* ============================================================ lembar penetapan penanggung jawab */
+const TIM_BHP = ['Syuhada, S.H., M.Hum.', 'Elsintha Damayanti, S.H.', 'Shela Natasha, S.H.', 'Andre Yosua Surbakti, S.E.', 'Annisa Dwi Marina, S.E.'];
+const KASI_WILAYAH_II = { nama: 'Elsintha Damayanti, S.H.', nip: '197105051992032001' };
+const PJ_HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const PJ_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+function pjTgl(k) { const [y, m, d] = String(k).split('-').map(Number); return new Date(y, m - 1, d); }
+function pjPendek(k) { const x = pjTgl(k); return x.getDate() + ' ' + PJ_BULAN[x.getMonth()].slice(0, 3) + ' ' + x.getFullYear(); }
+function pjPanjang(k) { const x = pjTgl(k); return x.getDate() + ' ' + PJ_BULAN[x.getMonth()] + ' ' + x.getFullYear(); }
+function pjRentang(a, b) {
+  if (!a || !b) return '';
+  if (a === b) return pjPanjang(a);
+  const x = pjTgl(a), y = pjTgl(b);
+  if (x.getMonth() === y.getMonth() && x.getFullYear() === y.getFullYear()) return x.getDate() + ' - ' + pjPanjang(b);
+  return pjPendek(a) + ' - ' + pjPendek(b);
+}
+function htmlLembarPJ(dari, sampai) {
+  const daftar = visible().filter(e => e.status !== 'Dibatalkan' && e.mulai <= sampai && e.selesai >= dari);
+  const baris = daftar.length ? daftar.map((e, i) => {
+    const tgl = esc(PJ_HARI[pjTgl(e.mulai).getDay()]) + '<br>' + esc(pjPendek(e.mulai)) + (e.selesai !== e.mulai ? '<br>s.d. ' + esc(pjPendek(e.selesai)) : '');
+    const jam = e.seharian || !e.jamMulai ? 'Seharian' : esc(e.jamMulai) + '<br>s.d. ' + esc(e.jamSelesai || 'selesai');
+    return '<tr><td class="tengah">' + (i + 1) + '</td><td class="tengah">' + tgl + '</td><td class="tengah">' + jam + '</td>'
+      + '<td><b>' + esc(e.judul) + '</b>' + (e.kategori ? '<div class="pihak">Kategori: ' + esc(e.kategori) + '</div>' : '') + '</td>'
+      + '<td>' + esc(e.lokasi || '-') + '</td>'
+      + '<td class="pj-sel"><input class="pj-input" list="tim-bhp" autocomplete="off" placeholder="pilih atau ketik" aria-label="Penanggung jawab kegiatan nomor ' + (i + 1) + '"></td>'
+      + '<td class="paraf"></td></tr>';
+  }).join('') : '<tr><td colspan="7" class="tengah" style="padding:16px">Tidak ada kegiatan pada rentang tanggal ini.</td></tr>';
+  return '<div class="kop"><img src="' + LOGO_PENGAYOMAN + '" alt="Lambang Pengayoman">'
+    + '<div><p>KEMENTERIAN HUKUM REPUBLIK INDONESIA</p><p>KANTOR WILAYAH SUMATERA UTARA</p><p><b>BALAI HARTA PENINGGALAN MEDAN</b></p>'
+    + '<p class="kecil">Jalan Listrik No. 10 Medan</p><p class="kecil">Telepon: (061) 451 7830, Faksimile: (061) 451 4328</p>'
+    + '<p class="kecil">Laman: www.bhpmedan.kemenkum.go.id, Pos-el: bhp.medan@kemenkum.go.id</p></div></div>'
+    + '<hr class="garis"><h1>LEMBAR PENETAPAN PENANGGUNG JAWAB KEGIATAN</h1>'
+    + '<p class="doc-sub">Seksi Harta Peninggalan Wilayah II</p><p class="doc-periode">Periode ' + esc(pjRentang(dari, sampai)) + '</p>'
+    + '<table><thead><tr><th style="width:26px">No</th><th style="width:84px">Hari / Tanggal</th><th style="width:66px">Waktu</th>'
+    + '<th>Kegiatan</th><th style="width:106px">Tempat / Media</th><th style="width:152px">Penanggung Jawab</th><th style="width:60px">Tanda Tangan</th>'
+    + '</tr></thead><tbody>' + baris + '</tbody></table>'
+    + '<datalist id="tim-bhp">' + TIM_BHP.map(n => '<option value="' + esc(n) + '"></option>').join('') + '</datalist>'
+    + '<div class="catatan"><b>Catatan</b>Kolom penanggung jawab diisi oleh Kepala Seksi Harta Peninggalan Wilayah II. '
+    + 'Penanggung jawab bertugas menyiapkan bahan, memastikan kehadiran pihak terkait, memimpin pelaksanaan, serta menyusun laporan kegiatan setelahnya.</div>'
+    + '<div class="ttd"><div class="ttd-in">Medan, ................................ ' + pjTgl(sampai).getFullYear() + '<br>Kepala Seksi Harta Peninggalan Wilayah II,'
+    + '<div class="ttd-cap">ttd.</div><div class="ttd-nama">' + esc(KASI_WILAYAH_II.nama) + '</div><div class="ttd-nip">NIP. ' + esc(KASI_WILAYAH_II.nip) + '</div></div></div>';
+}
+function bukaLembarPJ() {
+  const s0 = pjTgl(S.sel || todayKey()); const senin = new Date(s0); senin.setDate(s0.getDate() - ((s0.getDay() + 6) % 7));
+  const minggu = new Date(senin); minggu.setDate(senin.getDate() + 6);
+  const veil = document.createElement('div'); veil.className = 'doc-veil'; veil.id = 'doc-veil';
+  veil.innerHTML = '<div class="doc-wrap"><div class="doc-actions">'
+    + '<label for="pj-dari">Dari</label><input type="date" id="pj-dari" value="' + key(senin) + '">'
+    + '<label for="pj-sampai">Sampai</label><input type="date" id="pj-sampai" value="' + key(minggu) + '">'
+    + '<span class="grow"></span><div class="zoom-grp"><button type="button" class="zb" id="pj-kecil" aria-label="Perkecil">−</button>'
+    + '<span id="pj-zoom">100%</span><button type="button" class="zb" id="pj-besar" aria-label="Perbesar">+</button></div>'
+    + '<button type="button" class="btn btn-soft" id="pj-tutup">Tutup</button><button type="button" class="btn btn-primary" id="pj-cetak">Cetak / Simpan PDF</button>'
+    + '</div><div class="doc" id="pj-doc"></div></div>';
+  document.body.appendChild(veil);
+  const gambar = () => { document.getElementById('pj-doc').innerHTML = htmlLembarPJ(document.getElementById('pj-dari').value, document.getElementById('pj-sampai').value); };
+  veil.querySelector('#pj-dari').onchange = gambar; veil.querySelector('#pj-sampai').onchange = gambar;
+  let zoom = 100;
+  const setZoom = v => { zoom = Math.min(200, Math.max(60, v)); document.getElementById('pj-doc').style.zoom = zoom / 100; document.getElementById('pj-zoom').textContent = zoom + '%'; };
+  const tutup = () => { veil.remove(); document.removeEventListener('keydown', escPJ); };
+  function escPJ(e) { if (e.key === 'Escape') tutup(); }
+  veil.querySelector('#pj-kecil').onclick = () => setZoom(zoom - 10);
+  veil.querySelector('#pj-besar').onclick = () => setZoom(zoom + 10);
+  veil.querySelector('#pj-tutup').onclick = tutup;
+  veil.querySelector('#pj-cetak').onclick = () => window.print();
+  veil.onclick = e => { if (e.target === veil) tutup(); };
+  document.addEventListener('keydown', escPJ);
+  gambar();
+}
 </script>
 </body>
 </html>
