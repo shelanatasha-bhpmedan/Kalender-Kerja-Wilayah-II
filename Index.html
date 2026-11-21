@@ -471,7 +471,7 @@ body:has(.doc-veil) .overlay{z-index:130}
   body>*:not(.doc-veil){display:none!important}
   .doc-veil{position:static;background:none;padding:0;overflow:visible}
   .doc-wrap{max-width:none}.doc-actions{display:none!important}
-  .doc{box-shadow:none;border-radius:0;padding:0;zoom:1!important}
+  .doc{box-shadow:none;border-radius:0;padding:0;zoom:1!important;width:auto!important}
   .doc tr{break-inside:avoid}
   .doc .pj-input{border:0;border-bottom:1px dotted #555;border-radius:0;background:none;padding:2px 0;font-size:10px}
   .doc .pj-input::placeholder{color:transparent}
@@ -525,6 +525,17 @@ body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
 .side>div:has(#upcoming){grid-column:3;grid-row:1/4;overflow:auto}
 .side>div:last-child{grid-column:3;grid-row:4;margin-top:0!important}
 .side .cats{grid-template-columns:1fr}
+}
+@media (max-width:900px){
+.top .pj-open{order:-1;padding:6px 9px;font-size:12px}
+.doc-veil{padding:8px}
+.doc-actions{gap:6px;padding:8px;position:sticky;top:0;z-index:2}
+.doc-actions label{display:none}
+.doc-actions input[type=date]{flex:1 1 120px;min-width:0;height:30px;font-size:12px;padding:0 6px}
+.doc-actions .grow{display:none}
+.doc-actions .btn{padding:6px 10px;font-size:12px}
+.doc{width:880px;max-width:none;padding:28px 32px 36px}
+.doc-wrap{max-width:none}
 }
 </style>
 </head>
@@ -583,7 +594,7 @@ body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
       <details class="vmore hide-m" id="vmore"><summary id="vmoreLbl">Lainnya ▾</summary>
         <div><button data-v="board">📋 Papan Kanban</button><button data-v="stats">📊 Statistik</button><button data-v="log">📜 Log Aktivitas</button></div></details>
       <div class="grow hide-m"></div>
-      <button class="btn btn-soft hide-m" onclick="bukaLembarPJ()" title="Lembar penetapan penanggung jawab kegiatan (dokumen cetak untuk Kasi)">🖨️ Lembar PJ</button>
+      <button class="btn btn-soft pj-open" onclick="bukaLembarPJ()" title="Lembar penetapan penanggung jawab kegiatan (dokumen cetak untuk Kasi)">🖨️ Lembar PJ</button>
       <button class="btn btn-primary hide-m" onclick="openForm()">+ Kegiatan</button>
       <div class="search"><svg><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="q" placeholder="Cari kegiatan, lokasi, orang…" oninput="render()"><kbd class="hide-m">Ctrl K</kbd></div>
@@ -2091,7 +2102,7 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
   });
   veil.querySelector('#pj-dari').onchange = gambar; veil.querySelector('#pj-sampai').onchange = gambar;
   let zoom = 100;
-  const setZoom = v => { zoom = Math.min(200, Math.max(60, v)); document.getElementById('pj-doc').style.zoom = zoom / 100; document.getElementById('pj-zoom').textContent = zoom + '%'; };
+  const setZoom = v => { zoom = Math.min(200, Math.max(30, v)); document.getElementById('pj-doc').style.zoom = zoom / 100; document.getElementById('pj-zoom').textContent = zoom + '%'; };
   const tutup = () => { veil.remove(); document.removeEventListener('keydown', escPJ); window.removeEventListener('beforeprint', isiTglCetak); };
   function escPJ(e) { if (e.key === 'Escape') tutup(); }
   veil.querySelector('#pj-kecil').onclick = () => setZoom(zoom - 10);
@@ -2111,6 +2122,7 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
   veil.onclick = e => { if (e.target === veil) tutup(); };
   document.addEventListener('keydown', escPJ);
   gambar();
+  if (innerWidth < 900) setZoom(Math.floor((innerWidth - 20) / 880 * 100));
 }
 </script>
 </body>
