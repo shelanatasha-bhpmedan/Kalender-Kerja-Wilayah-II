@@ -970,7 +970,7 @@ function apiSetPj(eventId, nama) {
     const col = pjCol_(sh, true);
     const cur = readAll_('events').filter(function (e) { return e.id === eventId && e.dihapus !== 'TRUE'; })[0];
     if (!cur) throw new Error('Kegiatan tidak ditemukan');
-    const val = String(nama || '').trim().slice(0, 120);
+    const val = String(nama || '').trim().slice(0, 600);
     sh.getRange(cur._row, col).setValue(val);
     const ev = parseEvent_(cur);
     log_('PJ', ev, val ? 'Penanggung jawab: ' + val : 'Penanggung jawab dikosongkan');

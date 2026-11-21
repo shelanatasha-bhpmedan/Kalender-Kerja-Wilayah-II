@@ -658,6 +658,8 @@ body{display:flex;flex-direction:column;height:100dvh;max-width:100vw}
 .doc .pj-chips button{padding:6px 4px;font-size:11.5px}
 .doc .pj-input{height:34px;font-size:13px}
 }
+.doc .pj-cetak{display:none}
+@media print{.doc .pj-input{display:none!important}.doc .pj-cetak{display:block!important;font-size:10px;line-height:1.35}}
 </style>
 </head>
 <body>
@@ -2117,6 +2119,7 @@ const TIM_BHP = ['Syuhada, S.H., M.Hum.', 'Elsintha Damayanti, S.H.', 'Andre Yos
 const KASI_WILAYAH_II = { nama: 'Elsintha Damayanti, S.H.', nip: '197105051992032001' };
 const PJ_HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const PJ_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+function pjDaftar(v) { return String(v || '').split(';').map(x => x.trim()).filter(Boolean); }
 function pjWaktu(v) { const d = new Date(v); if (isNaN(d)) return String(v || ''); return d.getDate() + ' ' + PJ_BULAN[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear() + ', ' + String(d.getHours()).padStart(2, '0') + '.' + String(d.getMinutes()).padStart(2, '0') + ' WIB'; }
 function pjTgl(k) { const [y, m, d] = String(k).split('-').map(Number); return new Date(y, m - 1, d); }
 function pjPendek(k) { const x = pjTgl(k); return x.getDate() + ' ' + PJ_BULAN[x.getMonth()].slice(0, 3) + ' ' + x.getFullYear(); }
@@ -2136,7 +2139,7 @@ function htmlLembarPJ(dari, sampai) {
     return '<tr><td class="tengah" data-label="No">' + (i + 1) + '</td><td class="tengah" data-label="Hari / Tanggal">' + tgl + '</td><td class="tengah" data-label="Waktu">' + jam + '</td>'
       + '<td class="keg" data-label="Kegiatan"><b>' + esc(e.judul) + '</b>' + (e.kategori ? '<div class="pihak">Kategori: ' + esc(e.kategori) + '</div>' : '') + '</td>'
       + '<td data-label="Tempat / Media">' + esc(e.lokasi || '-') + '</td>'
-      + '<td class="pj-sel" data-label="Penanggung Jawab"><input class="pj-input" list="tim-bhp" autocomplete="off" placeholder="pilih atau ketik" data-id="' + esc(e.id) + '" value="' + esc(e.pj || '') + '" aria-label="Penanggung jawab kegiatan nomor ' + (i + 1) + '"><span class="pj-stat"></span><div class="pj-chips">' + TIM_BHP.map(nm => '<button type="button" data-nama="' + esc(nm) + '"' + (nm === (e.pj || '') ? ' class="on"' : '') + '>' + esc(nm.split(',')[0]) + '</button>').join('') + '</div></td>'
+      + '<td class="pj-sel" data-label="Penanggung Jawab"><input class="pj-input" list="tim-bhp" autocomplete="off" placeholder="pilih satu atau beberapa nama" data-id="' + esc(e.id) + '" value="' + esc(e.pj || '') + '" aria-label="Penanggung jawab kegiatan nomor ' + (i + 1) + '"><span class="pj-stat"></span><div class="pj-cetak">' + pjDaftar(e.pj).map(esc).join('<br>') + '</div><div class="pj-chips">' + TIM_BHP.map(nm => '<button type="button" data-nama="' + esc(nm) + '"' + (pjDaftar(e.pj).includes(nm) ? ' class="on"' : '') + '>' + esc(nm.split(',')[0]) + '</button>').join('') + '</div></td>'
       + '<td class="paraf" data-label="Tanda Tangan"></td></tr>';
   }).join('') : '<tr><td colspan="7" class="tengah" style="padding:16px">Tidak ada kegiatan pada rentang tanggal ini.</td></tr>';
   return '<div class="kop"><img src="' + LOGO_PENGAYOMAN + '" alt="Lambang Pengayoman">'
@@ -2263,13 +2266,17 @@ function bukaLembarPJ(dariAwal, sampaiAwal) {
   veil.addEventListener('click', ev => {
     const c = ev.target.closest('.pj-chips button'); if (!c) return;
     const td = c.closest('td'), inp = td.querySelector('.pj-input');
-    inp.value = c.classList.contains('on') ? '' : c.dataset.nama;
+    let daftar = pjDaftar(inp.value);
+    daftar = daftar.includes(c.dataset.nama) ? daftar.filter(x => x !== c.dataset.nama) : daftar.concat(c.dataset.nama);
+    inp.value = daftar.join('; ');
     inp.dispatchEvent(new Event('input', { bubbles: true }));
     inp.dispatchEvent(new Event('change', { bubbles: true }));
   });
   veil.addEventListener('input', ev => {
     const inp = ev.target.closest('.pj-input'); if (!inp) return;
-    inp.closest('td').querySelectorAll('.pj-chips button').forEach(x => x.classList.toggle('on', x.dataset.nama === inp.value.trim()));
+    const dl = pjDaftar(inp.value), td = inp.closest('td');
+    td.querySelectorAll('.pj-chips button').forEach(x => x.classList.toggle('on', dl.includes(x.dataset.nama)));
+    const pc = td.querySelector('.pj-cetak'); if (pc) pc.innerHTML = dl.map(esc).join('<br>');
   });
   veil.addEventListener('change', async ev => {
     const inp = ev.target.closest('.pj-input'); if (!inp) return;
